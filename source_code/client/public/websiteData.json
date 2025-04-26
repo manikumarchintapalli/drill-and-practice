@@ -1,0 +1,25 @@
+{
+  "navbar": {
+    "logo": "/logo.png",
+    "brand": "Kumbhamela",
+    "links": [
+      {
+        "label": "Home",
+        "value": "/"
+      },
+      {
+        "label": "Practice",
+        "value": "/Practice"
+      },
+      {
+        "label": "Dashboard",
+        "value": "/Dashboard"
+      },
+     
+      {
+        "label": "Profile",
+        "value": "/Profile"
+      }
+    ]
+  }
+}
