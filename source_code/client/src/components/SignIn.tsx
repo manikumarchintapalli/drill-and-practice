@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/pages/SignIn.tsx
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -8,71 +9,82 @@ import {
   CircularProgress,
   Alert,
   Link as MuiLink,
+  InputAdornment,
+  IconButton,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { Link, Navigate } from "react-router-dom";
 import { useSignInService, useAdminSignInService } from "../api/apiServices";
 import { getAuthenticatedUser, loginUser } from "../lib/authUtils";
 import TopNav from "./topNav";
 
-type AuthResponse = {
-  token: string;
-  role?: string;
-  [key: string]: any;
-};
+type AuthResponse = { token: string; role?: string; [key: string]: any };
 
 const SignIn: React.FC = () => {
   const user = getAuthenticatedUser();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  // local state for form
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // toggle password visibility auto‐hides after 3s
+  useEffect(() => {
+    if (!showPassword) return;
+    const t = setTimeout(() => setShowPassword(false), 3000);
+    return () => clearTimeout(t);
+  }, [showPassword]);
+
+  // react-query hooks
   const {
     mutate: signInUser,
     isPending: userPending,
-    error: userError,
-    isError: isUserError,
   } = useSignInService();
-
   const {
     mutate: signInAdmin,
     isPending: adminPending,
-    error: adminError,
-    isError: isAdminError,
   } = useAdminSignInService();
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [formData, setFormData] = useState({ email: "", password: "" });
-
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = () => {
+    setLoginError(null);
+
     const onSuccess = (data: AuthResponse) => {
       loginUser(data.token);
     };
+
+    const onError = (err: any) => {
+      // axios errors include response.data
+      const msg =
+        err?.response?.data ||
+        "Login failed. Please check your credentials.";
+      setLoginError(typeof msg === "string" ? msg : JSON.stringify(msg));
+    };
+
     if (isAdmin) {
-      signInAdmin(formData, { onSuccess });
+      signInAdmin(formData, { onSuccess, onError });
     } else {
-      signInUser(formData, { onSuccess });
+      signInUser(formData, { onSuccess, onError });
     }
   };
 
   if (user) {
-    return <Navigate to={user.role === "admin" ? "/admin/question-manager" : "/home"} replace />;
+    // already logged in: redirect
+    return (
+      <Navigate
+        to={user.role === "admin" ? "/admin/question-manager" : "/home"}
+        replace
+      />
+    );
   }
-
-  const getErrorMessage = () => {
-    const fallback = isAdmin
-      ? "Admin login failed. Please check your credentials."
-      : "User login failed. Please try again.";
-    const err = isAdmin ? adminError : userError;
-    const msg = (err as any)?.response?.data;
-    if (typeof msg === "string") return msg;
-    if (msg?.message) return msg.message;
-    return fallback;
-  };
 
   return (
     <>
@@ -80,7 +92,7 @@ const SignIn: React.FC = () => {
       <Container
         maxWidth="sm"
         sx={{
-          minHeight: "calc(100vh - 80px)", // adjusted height without adding background
+          minHeight: "calc(100vh - 80px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -92,7 +104,7 @@ const SignIn: React.FC = () => {
             bgcolor: "background.paper",
             p: { xs: 3, sm: 4 },
             borderRadius: 4,
-            boxShadow: "0px 8px 24px rgba(0,0,0,0.1)", // smooth shadow
+            boxShadow: "0px 8px 24px rgba(0,0,0,0.1)",
             width: "100%",
             maxWidth: 500,
           }}
@@ -106,9 +118,9 @@ const SignIn: React.FC = () => {
             {isAdmin ? "Admin Login" : "User Login"}
           </Typography>
 
-          {(isUserError || isAdminError) && (
+          {loginError && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {getErrorMessage()}
+              {loginError}
             </Alert>
           )}
 
@@ -134,24 +146,42 @@ const SignIn: React.FC = () => {
               autoComplete="email"
               variant="outlined"
             />
+
             <TextField
               required
               label="Password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleInput}
               fullWidth
               autoComplete="current-password"
               variant="outlined"
+              // endAdornment handled via InputProps
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
+
             <Button
               type="submit"
               variant="contained"
               fullWidth
               disabled={userPending || adminPending}
               sx={{
-                backgroundColor: "#5b21b6", // purple
+                backgroundColor: "#5b21b6",
                 color: "#fff",
                 fontWeight: "bold",
                 py: 1.5,
@@ -170,7 +200,10 @@ const SignIn: React.FC = () => {
             <MuiLink
               component="button"
               variant="body2"
-              onClick={() => setIsAdmin((prev) => !prev)}
+              onClick={() => {
+                setIsAdmin((prev) => !prev);
+                setLoginError(null);
+              }}
               sx={{
                 textAlign: "center",
                 color: "#5b21b6",
@@ -179,7 +212,9 @@ const SignIn: React.FC = () => {
                 "&:hover": { textDecoration: "underline" },
               }}
             >
-              {isAdmin ? "Login as User instead?" : "Login as Admin instead?"}
+              {isAdmin
+                ? "Login as User instead?"
+                : "Login as Admin instead?"}
             </MuiLink>
 
             {!isAdmin && (

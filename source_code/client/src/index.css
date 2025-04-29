@@ -13,3 +13,6 @@ body,
   padding: 0;
   scroll-behavior: smooth;
 }
+html {
+  overflow-y: scroll;
+}

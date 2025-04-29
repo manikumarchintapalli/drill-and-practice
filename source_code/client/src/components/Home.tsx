@@ -1,3 +1,5 @@
+// src/pages/Home.tsx
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,14 +9,16 @@ import {
   Typography,
   CircularProgress,
   Paper,
+  Toolbar,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { useGetAllQuestionsService } from "../api/apiServices";
 import TopicCard from "./TopicCard";
 import {
   BACKGROUND_COLOR,
   PRIMARY_COLOR,
-  SECONDARY_COLOR
+  SECONDARY_COLOR,
 } from "../lib/theme";
 
 const groupQuestionsByTopic = (
@@ -33,6 +37,8 @@ const groupQuestionsByTopic = (
 const Home: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const { data: questions = [], isLoading } = useGetAllQuestionsService();
   const grouped = groupQuestionsByTopic(questions);
 
@@ -41,21 +47,22 @@ const Home: React.FC = () => {
       sx={{
         bgcolor: BACKGROUND_COLOR,
         minHeight: "100vh",
-        pt: { xs: 10, sm: 12 },
+        // push below navbar: 56px mobile, 64px desktop
+        pt: isMobile ? "56px" : "64px",
         pb: 10,
+        scrollBehavior: "smooth",
       }}
     >
+      <Toolbar />
+
       <Container maxWidth="lg">
         {/* Hero Section */}
         <Stack alignItems="center" spacing={3} mb={8}>
           <Typography
-            variant="h4"
+            variant={isMobile ? "h5" : "h4"}
             fontWeight="bold"
             textAlign="center"
-            sx={{
-              fontSize: { xs: "2rem", sm: "2.4rem", md: "2.8rem" },
-              color: PRIMARY_COLOR,
-            }}
+            sx={{ color: PRIMARY_COLOR }}
           >
             Welcome to{" "}
             <Box
@@ -72,26 +79,22 @@ const Home: React.FC = () => {
           <Typography
             variant="body1"
             color="text.primary"
-            maxWidth="sm"
+            maxWidth={isMobile ? "100%" : "600px"}
             textAlign="center"
-            fontSize={{ xs: "1rem", sm: "1.1rem" }}
           >
             Master DBMS concepts by solving curated challenges.
             <br />
-            Real‐time learning through action.
+            Real-time learning through action.
           </Typography>
         </Stack>
 
         {/* Explore Topics */}
         <Box mb={10}>
           <Typography
-            variant="h5"
+            variant={isMobile ? "h6" : "h5"}
             fontWeight="bold"
             mb={3}
-            sx={{
-              color: PRIMARY_COLOR,
-              fontSize: { xs: "1.3rem", sm: "1.5rem" },
-            }}
+            sx={{ color: PRIMARY_COLOR }}
           >
             Explore Topics
           </Typography>
@@ -107,16 +110,17 @@ const Home: React.FC = () => {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "1fr 1fr",
-                  md: "1fr 1fr 1fr",
-                },
+                gridTemplateColumns: isMobile
+                  ? "1fr"
+                  : "repeat(auto-fill, minmax(240px, 1fr))",
                 gap: 4,
               }}
             >
               {Object.entries(grouped).map(([topic, topicQuestions]) => (
-                <Box key={topic} sx={{ display: "flex", justifyContent: "center" }}>
+                <Box
+                  key={topic}
+                  sx={{ display: "flex", justifyContent: "center" }}
+                >
                   <Box sx={{ width: "100%", maxWidth: 320 }}>
                     <TopicCard
                       topic={topic}
@@ -133,13 +137,10 @@ const Home: React.FC = () => {
         {/* Quick Drill */}
         <Box mt={12} mb={8}>
           <Typography
-            variant="h5"
+            variant={isMobile ? "h6" : "h5"}
             fontWeight="bold"
             mb={3}
-            sx={{
-              color: PRIMARY_COLOR,
-              fontSize: { xs: "1.3rem", sm: "1.5rem" },
-            }}
+            sx={{ color: PRIMARY_COLOR }}
           >
             Quick Drill
           </Typography>
@@ -147,11 +148,9 @@ const Home: React.FC = () => {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "1fr 1fr",
-                md: "1fr 1fr 1fr",
-              },
+              gridTemplateColumns: isMobile
+                ? "1fr"
+                : "repeat(auto-fill, minmax(240px, 1fr))",
               gap: 4,
             }}
           >
@@ -168,12 +167,11 @@ const Home: React.FC = () => {
                       p: 3,
                       textAlign: "center",
                       cursor: "pointer",
-                      flexGrow: 1,
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "center",
                       bgcolor: theme.palette.background.paper,
-                      transition: "all 0.3s ease",
+                      transition: "transform 0.3s, box-shadow 0.3s",
                       "&:hover": {
                         transform: "translateY(-4px)",
                         boxShadow: theme.shadows[6],
@@ -181,10 +179,9 @@ const Home: React.FC = () => {
                     }}
                   >
                     <Typography
-                      variant="h6"
+                      variant={isMobile ? "subtitle1" : "h6"}
                       fontWeight="bold"
                       sx={{ color: SECONDARY_COLOR, mb: 1 }}
-                      fontSize={{ xs: "1rem", sm: "1.1rem" }}
                     >
                       {topic}
                     </Typography>

@@ -1,4 +1,7 @@
+// src/components/Navbar.tsx
+
 import React, { useState } from "react";
+import { NavLink, Link } from "react-router-dom";
 import {
   AppBar,
   Toolbar,
@@ -14,7 +17,6 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { NavLink, Link } from "react-router-dom";
 import { useWebsiteData } from "../api/apiServices";
 import { getAuthenticatedUser, logoutUser } from "../lib/authUtils";
 import {
@@ -24,6 +26,11 @@ import {
   BACKGROUND_COLOR,
 } from "../lib/theme";
 
+interface NavLinkItem {
+  label: string;
+  to: string;
+}
+
 const Navbar: React.FC = () => {
   const { data } = useWebsiteData();
   const user = getAuthenticatedUser();
@@ -31,11 +38,11 @@ const Navbar: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const guestLinks = [
+  const guestLinks: NavLinkItem[] = [
     { label: "Sign In", to: "/sign-in" },
     { label: "Sign Up", to: "/sign-up" },
   ];
-  const authLinks =
+  const authLinks: NavLinkItem[] =
     data?.navbar?.links?.map((l: any) => ({ label: l.label, to: l.value })) || [
       { label: "Home", to: "/" },
       { label: "Practice", to: "/practice" },
@@ -43,10 +50,10 @@ const Navbar: React.FC = () => {
       { label: "Profile", to: "/profile" },
     ];
 
-  const renderLinks = (drawer = false) => {
+  const renderLinks = (inDrawer = false) => {
     const links = user ? authLinks : guestLinks;
     return links.map((link) =>
-      drawer ? (
+      inDrawer ? (
         <ListItemButton
           key={link.to}
           component={NavLink}
@@ -62,11 +69,7 @@ const Navbar: React.FC = () => {
           <ListItemText primary={link.label} />
         </ListItemButton>
       ) : (
-        <NavLink
-          key={link.to}
-          to={link.to}
-          style={{ textDecoration: "none" }}
-        >
+        <NavLink key={link.to} to={link.to} style={{ textDecoration: "none" }}>
           {({ isActive }) => (
             <Button
               sx={{
@@ -76,10 +79,8 @@ const Navbar: React.FC = () => {
                 fontWeight: 600,
                 fontSize: "1rem",
                 letterSpacing: "0.5px",
-                transition: "all 0.2s ease-in-out",
-                "&:hover": {
-                  color: HIGHLIGHTS_COLOR,
-                },
+                transition: "color 0.2s",
+                "&:hover": { color: HIGHLIGHTS_COLOR },
               }}
             >
               {link.label}
@@ -93,11 +94,13 @@ const Navbar: React.FC = () => {
   return (
     <>
       <AppBar
-        position="fixed" // <-- make navbar fixed
+        position="fixed"
         elevation={3}
         sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
           backgroundColor: SECONDARY_COLOR,
           py: { xs: 1, sm: 1.2 },
+          transition: "top 0.3s ease-in-out",
         }}
       >
         <Toolbar
@@ -105,21 +108,16 @@ const Navbar: React.FC = () => {
             width: "100%",
             maxWidth: "1200px",
             mx: "auto",
+            px: { xs: 2, sm: 3 },
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
-            px: { xs: 2, sm: 3 },
           }}
         >
-          {/* Logo and Brand */}
+          {/* Logo & Brand */}
           <Box
             component={Link}
             to="/"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              textDecoration: "none",
-            }}
+            sx={{ display: "flex", alignItems: "center", textDecoration: "none" }}
           >
             <Box
               component="img"
@@ -129,30 +127,26 @@ const Navbar: React.FC = () => {
                 height: 40,
                 width: 40,
                 borderRadius: "50%",
-                objectFit: "cover",
                 backgroundColor: BACKGROUND_COLOR,
                 border: `2px solid ${HIGHLIGHTS_COLOR}`,
-                boxShadow: `0 2px 6px rgba(0,0,0,0.25)`,
+                boxShadow: "0 2px 6px rgba(0,0,0,0.25)",
               }}
             />
-
             <Typography
               variant="h5"
               sx={{
-                fontFamily: "'Poppins', sans-serif",
+                ml: 1.5,
                 color: HIGHLIGHTS_COLOR,
                 fontWeight: 700,
-                fontSize: { xs: "1.5rem", sm: "1.8rem", md: "2rem" },
                 letterSpacing: "1.5px",
-                ml: 1.5,
                 userSelect: "none",
               }}
             >
-              {data?.navbar?.brand || "Kumbhamela"}
+              {data?.navbar?.brand || "Drill & Practice"}
             </Typography>
           </Box>
 
-          {/* Links */}
+          {/* Links or Hamburger */}
           {!isMobile ? (
             <Box display="flex" alignItems="center">
               {renderLinks(false)}
@@ -167,10 +161,7 @@ const Navbar: React.FC = () => {
                     backgroundColor: HIGHLIGHTS_COLOR,
                     color: SECONDARY_COLOR,
                     boxShadow: "none",
-                    "&:hover": {
-                      backgroundColor: HIGHLIGHTS_COLOR,
-                      opacity: 0.9,
-                    },
+                    "&:hover": { opacity: 0.9 },
                   }}
                 >
                   Sign Out
@@ -179,9 +170,12 @@ const Navbar: React.FC = () => {
             </Box>
           ) : (
             <IconButton
-              edge="end"
-              onClick={() => setDrawerOpen(true)}
               sx={{ color: HIGHLIGHTS_COLOR }}
+              onClick={(e) => {
+                setDrawerOpen(true);
+                // immediately blur the button so focus moves into the drawer
+                (e.currentTarget as HTMLElement).blur();
+              }}
             >
               <MenuIcon />
             </IconButton>
@@ -189,14 +183,15 @@ const Navbar: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Mobile Drawer */}
       <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: { backgroundColor: BACKGROUND_COLOR },
+        ModalProps={{
+          keepMounted: true,
+          disableScrollLock: true,
         }}
+        PaperProps={{ sx: { backgroundColor: BACKGROUND_COLOR } }}
       >
         <Box width={240} sx={{ mt: 2 }}>
           <List>

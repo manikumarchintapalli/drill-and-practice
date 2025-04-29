@@ -262,29 +262,66 @@ export const useSignUpService = () =>
     },
   });
 
-
-export const useGetUserProfileService = () => {
-  const user = getAuthenticatedUser();
-  return useQuery<any, Error>({
-    queryKey: ["userProfile", user?._id],
-    queryFn: async () => {
-      const res = await http.get(`/api/user/profile/${user?._id}`);
-      return res.data;
-    },
-    enabled: Boolean(user),
-  });
-};
-
-export const useUpdateUserProfileService = () =>
-  useMutation<any, Error, Partial<any>>({
-    mutationFn: async (body) => {
-      const res = await http.put("/api/user/profile", body);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({queryKey:["userProfile"]});
-    },
-  });
+  export interface ProfileData {
+    _id: string;
+    username: string;
+    email: string;
+    phoneNo?: string;
+    dob?: string;
+    avatar?: string;
+  }
+  
+  // Fetch your own profile
+  export const useGetUserProfileService = () => {
+    const user = getAuthenticatedUser();
+    return useQuery<ProfileData, Error>({
+      queryKey: ["userProfile", user?._id],
+      queryFn: async () => {
+        const res = await http.get<ProfileData>(`/api/user/profile/${user?._id}`);
+        return res.data;
+      },
+      enabled: Boolean(user?._id),
+    });
+  };
+  
+  // Update profile by ID
+  export const useUpdateUserProfileService = () =>
+    useMutation<ProfileData, Error, ProfileData>({
+      mutationFn: async (body) => {
+        const { _id, ...updates } = body;
+        const res = await http.put<ProfileData>(`/api/user/profile/${_id}`, updates);
+        return res.data;
+      },
+      onSuccess: (data) => {
+        // update cached profile
+        queryClient.setQueryData(["userProfile", data._id], data);
+      },
+    });
+  // export const useGetUserProfileService = () => {
+  //   const user = getAuthenticatedUser();
+  //   return useQuery<any, Error>({
+  //     queryKey: ["userProfile", user?._id],
+  //     queryFn: async () => {
+  //       // GET /api/user/profile/:id
+  //       const res = await http.get(`/api/user/profile/${user?._id}`);
+  //       return res.data;
+  //     },
+  //     enabled: Boolean(user),
+  //   });
+  // };
+  
+  // export const useUpdateUserProfileService = () =>
+  //   useMutation<any, Error, Partial<any> & { id: string }>({
+  //     mutationFn: async (body) => {
+  //       const { id, ...updates } = body;
+  //       // PUT /api/user/profile/:id
+  //       const res = await http.put(`/api/user/profile/${id}`, updates);
+  //       return res.data;
+  //     },
+  //     onSuccess: () => {
+  //       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+  //     },
+  //   });
 
   export const useResetPasswordService = () =>
     useMutation<any, Error, { currentPassword: string; newPassword: string }>({

@@ -1,4 +1,5 @@
 // src/components/PracticeTable.tsx
+
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
@@ -19,7 +20,6 @@ import {
   Stack,
   Typography,
   useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +40,8 @@ interface PracticeTableProps {
 const slugify = (text: string) =>
   text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
+const ITEMS_PER_PAGE = 10;
+
 const PracticeTable: React.FC<PracticeTableProps> = ({
   problems,
   isLoading = false,
@@ -48,14 +50,20 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
   const [filterStatus, setFilterStatus] = useState<'All' | Problem['status']>('All');
   const [filterDifficulty, setFilterDifficulty] = useState<'All' | Problem['difficulty']>('All');
   const [localProblems, setLocalProblems] = useState<Problem[]>(problems);
+  const [page, setPage] = useState(1);
 
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // whenever the source problems change, reset our local copy
   useEffect(() => {
     setLocalProblems(problems);
   }, [problems]);
+
+  // Automatically reset to page 1 when filters or search change
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus, filterDifficulty]);
 
   const handleStatusChange = (id: string, newStatus: Problem['status']) => {
     setLocalProblems(lp =>
@@ -63,6 +71,7 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
     );
   };
 
+  // Apply search & filters
   const filtered = localProblems
     .filter(p => {
       const q = search.toLowerCase();
@@ -74,6 +83,13 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
     })
     .filter(p => (filterStatus === 'All' ? true : p.status === filterStatus))
     .filter(p => (filterDifficulty === 'All' ? true : p.difficulty === filterDifficulty));
+
+  // Compute pagination
+  const pageCount = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
 
   const difficultyColorMap: Record<Problem['difficulty'], 'success' | 'warning' | 'error'> = {
     Easy: 'success',
@@ -160,7 +176,7 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
           </TableHead>
 
           <TableBody>
-            {filtered.map(p => (
+            {paginated.map(p => (
               <TableRow key={p.id}>
                 <TableCell align="center">
                   <FormControl fullWidth size="small">
@@ -208,7 +224,7 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
               </TableRow>
             ))}
 
-            {filtered.length === 0 && (
+            {paginated.length === 0 && (
               <TableRow>
                 <TableCell colSpan={4} align="center">
                   <Typography color="text.secondary">
@@ -222,9 +238,16 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
       </Box>
 
       {/* Pagination */}
-      <Stack mt={4} alignItems="center">
-        <Pagination count={3} color="primary" />
-      </Stack>
+      {pageCount > 1 && (
+        <Stack mt={4} alignItems="center">
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={(_, val) => setPage(val)}
+            color="primary"
+          />
+        </Stack>
+      )}
     </Box>
   );
 };

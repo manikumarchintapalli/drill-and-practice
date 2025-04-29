@@ -250,7 +250,7 @@ describe("User/Auth Routes Coverage", () => {
   test("Duplicate user registration fails", async () => {
     await request.post("/api/user/sign-up").send(TEST_USER);
     const res = await request.post("/api/user/sign-up").send(TEST_USER);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
   });
 
   test("Admin sign-up and login", async () => {

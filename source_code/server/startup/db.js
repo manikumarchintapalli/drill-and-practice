@@ -21,7 +21,7 @@ const initializeDB = async () => {
     : process.env.DATABASE_URI;
 
   if (!DB_URI) {
-    console.error("❌ Database URI not provided in environment variables.");
+    console.error("Database URI not provided in environment variables.");
     process.exit(1);
   }
 
@@ -30,9 +30,9 @@ const initializeDB = async () => {
       // useNewUrlParser: true,
       // useUnifiedTopology: true,
     });
-    console.log(`✅ MongoDB connected to ${DB_URI}`);
+    console.log(`MongoDB connected to ${DB_URI}`);
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("MongoDB connection failed:", err.message);
     process.exit(1);
   }
 };

@@ -1,246 +1,4 @@
-// import { useLocation, useNavigate, useParams } from "react-router-dom";
-// import {
-//   Alert,
-//   Box,
-//   Button,
-//   Card,
-//   CardContent,
-//   CircularProgress,
-//   Container,
-//   TextField,
-//   Typography,
-//   Divider,
-//   useMediaQuery,
-//   useTheme,
-// } from "@mui/material";
-// import { useState } from "react";
-// import { useGetAllQuestionsService } from "../api/apiServices";
-
-// const SolutionPage = () => {
-//   const { topicSlug } = useParams();
-//   const { state } = useLocation();
-//   const navigate = useNavigate();
-//   const theme = useTheme();
-//   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-//   const [assumption, setAssumption] = useState("");
-//   const [analysis, setAnalysis] = useState(null);
-//   const [loading, setLoading] = useState(false);
-
-//   const { data: allProblems = [] } = useGetAllQuestionsService();
-
-//   if (!state) {
-//     return (
-//       <Container sx={{ py: 8, textAlign: "center" }}>
-//         <Alert severity="error">No solution data found!</Alert>
-//       </Container>
-//     );
-//   }
-
-//   const { selectedOption, problem } = state;
-//   const isCorrect = selectedOption === problem.answerIndex;
-
-//   const handleAnalyze = async () => {
-//     if (!assumption.trim()) {
-//       alert("Please enter your assumption!");
-//       return;
-//     }
-
-//     setLoading(true);
-//     try {
-//       const response = await fetch("http://localhost:8080/api/analyze", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           question: problem.title,
-//           userAnswer: problem.options[selectedOption],
-//           correctAnswer: problem.options[problem.answerIndex],
-//           assumption,
-//         }),
-//       });
-
-//       if (!response.ok) {
-//         const text = await response.text();
-//         throw new Error(`Server Error: ${response.status} - ${text}`);
-//       }
-
-//       const { feedback } = await response.json();
-//       if (!feedback) throw new Error("No feedback returned from API");
-
-//       setAnalysis(feedback);
-//     } catch (err) {
-//       console.error("AI Analysis Error:", err);
-//       alert("Failed to analyze. Please try again later.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const normalized = (str) =>
-//     str.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, "");
-
-//   const filteredProblems = allProblems.filter(
-//     (p) => normalized(p.topic) === topicSlug
-//   );
-//   const currentIndex = filteredProblems.findIndex((p) => p._id === problem._id);
-//   const nextProblem = filteredProblems[currentIndex + 1];
-
-//   return (
-//     <Box
-//       sx={{
-//         minHeight: "100vh",
-//         py: { xs: 6, md: 8 },
-//         bgcolor: "#f4f6f8",
-//         display: "flex",
-//         alignItems: "center",
-//       }}
-//     >
-//       <Container maxWidth="md">
-//         <Card
-//           elevation={4}
-//           sx={{
-//             p: { xs: 3, sm: 4 },
-//             borderRadius: 3,
-//             boxShadow: 3,
-//             backgroundColor: "#fff",
-//           }}
-//         >
-//           <Typography
-//             variant={isMobile ? "h5" : "h4"}
-//             textAlign="center"
-//             fontWeight="bold"
-//             mb={3}
-//             color="primary.main"
-//           >
-//             Solution Overview
-//           </Typography>
-
-//           <Box mb={3}>
-//             <Typography variant="h6" fontWeight={600} gutterBottom>
-//               Question
-//             </Typography>
-//             <Typography variant="body1" mb={1}>
-//               {problem.title}
-//             </Typography>
-//             <Typography variant="body2" color="text.secondary">
-//               {problem.description}
-//             </Typography>
-//           </Box>
-
-//           <Divider sx={{ my: 3 }} />
-
-//           <Alert severity={isCorrect ? "success" : "error"} sx={{ mb: 2 }}>
-//             {isCorrect
-//               ? "Correct! You chose the right answer."
-//               : "Oops! Your answer was incorrect."}
-//           </Alert>
-
-//           <Typography variant="body1" gutterBottom>
-//             <strong>Your Answer:</strong> {problem.options[selectedOption]}
-//           </Typography>
-//           <Typography variant="body1" gutterBottom>
-//             <strong>Correct Answer:</strong> {problem.options[problem.answerIndex]}
-//           </Typography>
-
-//           <Divider sx={{ my: 3 }} />
-
-//           <Typography variant="h6" mb={1}>
-//             Your Assumption
-//           </Typography>
-//           <TextField
-//             fullWidth
-//             multiline
-//             rows={4}
-//             placeholder="Explain why you chose that answer..."
-//             value={assumption}
-//             onChange={(e) => setAssumption(e.target.value)}
-//             disabled={loading || Boolean(analysis)}
-//           />
-
-//           {!analysis && (
-//             <Box mt={3}>
-//               <Button
-//                 variant="contained"
-//                 fullWidth
-//                 onClick={handleAnalyze}
-//                 disabled={loading}
-//                 size="large"
-//               >
-//                 {loading ? (
-//                   <>
-//                     <CircularProgress size={20} sx={{ mr: 1 }} /> Analyzing...
-//                   </>
-//                 ) : (
-//                   "Get AI Feedback"
-//                 )}
-//               </Button>
-//             </Box>
-//           )}
-
-//           {analysis && (
-//             <Box
-//               sx={{
-//                 mt: 4,
-//                 p: 2,
-//                 backgroundColor: "#eaf1ff",
-//                 borderRadius: 2,
-//                 animation: "slideIn 0.4s ease-in-out",
-//               }}
-//             >
-//               <Typography
-//                 variant="h6"
-//                 fontWeight="bold"
-//                 mb={1}
-//                 color="primary"
-//               >
-//                 AI Feedback
-//               </Typography>
-//               <ul style={{ paddingLeft: 20, margin: 0 }}>
-//                 {analysis
-//                   .split("\n")
-//                   .filter((line) => line.trim())
-//                   .map((line, i) => (
-//                     <li key={i}>
-//                       <Typography variant="body2">{line.trim()}</Typography>
-//                     </li>
-//                   ))}
-//               </ul>
-//             </Box>
-//           )}
-
-//           <Box mt={4}>
-//             {nextProblem ? (
-//               <Button
-//                 variant="outlined"
-//                 fullWidth
-//                 onClick={() =>
-//                   navigate(`/practice/${topicSlug}/${nextProblem._id}`)
-//                 }
-//               >
-//                 Next Question
-//               </Button>
-//             ) : (
-//               <Alert severity="info" sx={{ mt: 2 }}>
-//                 You've completed all questions in this topic!
-//               </Alert>
-//             )}
-//           </Box>
-//         </Card>
-//       </Container>
-
-//       <style>
-//         {`
-//           @keyframes slideIn {
-//             from { transform: translateY(15px); opacity: 0; }
-//             to { transform: translateY(0); opacity: 1; }
-//           }
-//         `}
-//       </style>
-//     </Box>
-//   );
-// };
-
-// export default SolutionPage;
+// src/pages/SolutionPage.tsx
 
 import React, { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -250,14 +8,20 @@ import {
   Button,
   Card,
   CardContent,
-  CircularProgress,
   Container,
+  Divider,
+  List,
+  ListItem,
+  ListItemIcon,
+  Paper,
   TextField,
   Typography,
-  Divider,
+  Toolbar,          // ← import Toolbar
   useMediaQuery,
-  useTheme,
+  useTheme
 } from "@mui/material";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import FlashOnIcon from "@mui/icons-material/FlashOn";
 import { useGetAllQuestionsService } from "../api/apiServices";
 
 interface Problem {
@@ -277,9 +41,8 @@ interface LocationState {
 const SolutionPage: React.FC = () => {
   const { topicSlug } = useParams<{ topicSlug: string }>();
   const location = useLocation();
-  const state = location.state as LocationState | undefined;
+  const state = (location.state as LocationState) || undefined;
   const navigate = useNavigate();
-
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -300,14 +63,14 @@ const SolutionPage: React.FC = () => {
   const { selectedOption, problem } = state;
   const isCorrect = selectedOption === problem.answerIndex;
 
-  // filter out current topic's problems
+  // Filter and find next problem
   const normalize = (s: string) =>
     s.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, "");
-  const filtered = allProblems.filter(
+  const topicProblems = allProblems.filter(
     (p) => normalize(p.topic || "") === topicSlug
   );
-  const idx = filtered.findIndex((p) => p._id === problem._id);
-  const next = filtered[idx + 1];
+  const currentIndex = topicProblems.findIndex((p) => p._id === problem._id);
+  const nextProblem = topicProblems[currentIndex + 1];
 
   const handleAnalyze = async () => {
     if (!assumption.trim()) {
@@ -341,24 +104,25 @@ const SolutionPage: React.FC = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        py: { xs: theme.spacing(6), md: theme.spacing(8) },
-        bgcolor: "background.default",
-        display: "flex",
-        alignItems: "center",
+        background: "linear-gradient(135deg, #1f2428 0%, #3a3f44 50%, #ececec 100%)",
       }}
     >
-      <Container maxWidth="md">
+      {/* This Toolbar component adds the exact height of your AppBar */}
+      <Toolbar />
+
+      <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 } }}>
         <Card
           elevation={4}
           sx={{
-            backgroundColor: "background.paper",
+            backgroundColor: "rgba(255,255,255,0.9)",
             borderRadius: theme.shape.borderRadius * 2,
           }}
         >
           <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+            {/* Title */}
             <Typography
               variant={isMobile ? "h5" : "h4"}
-              textAlign="center"
+              align="center"
               fontWeight="bold"
               mb={3}
               color="primary.main"
@@ -366,6 +130,7 @@ const SolutionPage: React.FC = () => {
               Solution Overview
             </Typography>
 
+            {/* Question */}
             <Box mb={3}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 Question
@@ -373,33 +138,32 @@ const SolutionPage: React.FC = () => {
               <Typography variant="body1" mb={1}>
                 {problem.title}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {problem.description}
-              </Typography>
+              {problem.description && (
+                <Typography variant="body2" color="text.secondary">
+                  {problem.description}
+                </Typography>
+              )}
             </Box>
 
             <Divider sx={{ my: 3 }} />
 
-            <Alert
-              severity={isCorrect ? "success" : "error"}
-              sx={{ mb: 2 }}
-            >
+            {/* Correctness */}
+            <Alert severity={isCorrect ? "success" : "error"} sx={{ mb: 2 }}>
               {isCorrect
                 ? "Correct! You chose the right answer."
                 : "Oops! Your answer was incorrect."}
             </Alert>
 
             <Typography variant="body1" gutterBottom>
-              <strong>Your Answer:</strong>{" "}
-              {problem.options[selectedOption]}
+              <strong>Your Answer:</strong> {problem.options[selectedOption]}
             </Typography>
             <Typography variant="body1" gutterBottom>
-              <strong>Correct Answer:</strong>{" "}
-              {problem.options[problem.answerIndex]}
+              <strong>Correct Answer:</strong> {problem.options[problem.answerIndex]}
             </Typography>
 
             <Divider sx={{ my: 3 }} />
 
+            {/* Assumption Input */}
             <Typography variant="h6" mb={1}>
               Your Assumption
             </Typography>
@@ -410,82 +174,91 @@ const SolutionPage: React.FC = () => {
               placeholder="Explain why you chose that answer..."
               value={assumption}
               onChange={(e) => setAssumption(e.target.value)}
-              disabled={loading || Boolean(analysis)}
+              disabled={loading || !!analysis}
             />
 
+            {/* Analyze Button & Spark */}
             {!analysis && (
-              <Box mt={3}>
+              <Box mt={3} textAlign="center">
                 <Button
                   variant="contained"
-                  fullWidth
                   size="large"
                   onClick={handleAnalyze}
                   disabled={loading}
                 >
-                  {loading ? (
-                    <>
-                      <CircularProgress
-                        size={20}
-                        sx={{ mr: 1 }}
-                      />
-                      Analyzing...
-                    </>
-                  ) : (
-                    "Get AI Feedback"
-                  )}
+                  {loading ? "AI Generating…" : "Get AI Feedback"}
                 </Button>
+                {loading && (
+                  <Box sx={{ mt: 2, textAlign: "center" }}>
+                    <FlashOnIcon
+                      color="warning"
+                      sx={{
+                        fontSize: 64,
+                        animation: "spark 1.2s ease-in-out infinite",
+                      }}
+                    />
+                  </Box>
+                )}
               </Box>
             )}
 
+            {/* AI Feedback Panel */}
             {analysis && (
-              <Box
+              <Paper
+                elevation={3}
                 sx={{
                   mt: 4,
-                  p: 2,
-                  backgroundColor: "info.light",
-                  borderRadius: theme.shape.borderRadius,
+                  p: 3,
+                  borderLeft: `4px solid ${theme.palette.primary.main}`,
+                  backgroundColor: "background.paper",
                   animation: "slideIn 0.4s ease-in-out",
                 }}
               >
                 <Typography
                   variant="h6"
                   fontWeight="bold"
-                  mb={1}
+                  gutterBottom
                   color="primary.main"
                 >
                   AI Feedback
                 </Typography>
-                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                <Divider sx={{ mb: 2 }} />
+
+                <List disablePadding>
                   {analysis
                     .split("\n")
-                    .filter((l) => l.trim())
-                    .map((l, i) => (
-                      <li key={i}>
-                        <Typography variant="body2">
-                          {l.trim()}
-                        </Typography>
-                      </li>
+                    .filter((l) => !!l.trim() && !l.toLowerCase().startsWith("correct answer"))
+                    .map((line, i) => (
+                      <ListItem key={i} disableGutters>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <InfoOutlinedIcon color="primary" />
+                        </ListItemIcon>
+                        <Typography variant="body2">{line.trim()}</Typography>
+                      </ListItem>
                     ))}
-                </ul>
-              </Box>
+                </List>
+
+                {/* Final bolded line */}
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="body1" fontWeight="bold">
+                  Correct Answer: {problem.options[problem.answerIndex]}
+                </Typography>
+              </Paper>
             )}
 
+            {/* Next Question */}
             <Box mt={4}>
-              {next ? (
+              {nextProblem ? (
                 <Button
                   variant="outlined"
                   fullWidth
-                  onClick={() =>
-                    navigate(
-                      `/practice/${topicSlug}/${next._id}`
-                    )
-                  }
+                  onClick={() => navigate(`/practice/${topicSlug}/${nextProblem._id}`)}
                 >
                   Next Question
                 </Button>
               ) : (
                 <Alert severity="info">
-                  You&apos;ve completed all questions in this topic!
+                  You've completed all questions in this topic!
                 </Alert>
               )}
             </Box>
@@ -496,7 +269,12 @@ const SolutionPage: React.FC = () => {
       <style>{`
         @keyframes slideIn {
           from { transform: translateY(15px); opacity: 0; }
-          to   { transform: translateY(0);  opacity: 1; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes spark {
+          0% { opacity: 0.2; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
+          100% { opacity: 0.2; transform: scale(0.8); }
         }
       `}</style>
     </Box>

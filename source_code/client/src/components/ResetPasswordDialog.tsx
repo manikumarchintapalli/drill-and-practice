@@ -1,108 +1,4 @@
-// import { useState } from "react";
-// import {
-//   Dialog,
-//   DialogTitle,
-//   DialogContent,
-//   DialogActions,
-//   TextField,
-//   Button,
-//   Alert,
-// } from "@mui/material";
-// import { useResetPasswordService } from "../api/apiServices";
-
-// const ResetPasswordDialog = ({ show, onClose }) => {
-//   const [form, setForm] = useState({
-//     currentPassword: "",
-//     newPassword: "",
-//     confirmPassword: "",
-//   });
-
-//   const [error, setError] = useState(null);
-//   const { mutate, isPending } = useResetPasswordService();
-
-//   const handleChange = (e) => {
-//     setForm((prev) => ({
-//       ...prev,
-//       [e.target.name]: e.target.value,
-//     }));
-//   };
-
-//   const handleReset = () => {
-//     setError(null);
-
-//     if (form.newPassword !== form.confirmPassword) {
-//       setError("Passwords do not match.");
-//       return;
-//     }
-
-//     mutate(
-//       {
-//         currentPassword: form.currentPassword,
-//         newPassword: form.newPassword,
-//       },
-//       {
-//         onSuccess: () => {
-//           onClose();
-//           setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-//         },
-//         onError: (err) => {
-//           const msg = err?.response?.data || "Something went wrong.";
-//           setError(msg);
-//         },
-//       }
-//     );
-//   };
-
-//   return (
-//     <Dialog open={show} onClose={onClose} fullWidth maxWidth="xs">
-//       <DialogTitle>Reset Password</DialogTitle>
-
-//       <DialogContent
-//         dividers
-//         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
-//       >
-//         {error && <Alert severity="error">{error}</Alert>}
-
-//         <TextField
-//           label="Current Password"
-//           name="currentPassword"
-//           type="password"
-//           value={form.currentPassword}
-//           onChange={handleChange}
-//           fullWidth
-//         />
-//         <TextField
-//           label="New Password"
-//           name="newPassword"
-//           type="password"
-//           value={form.newPassword}
-//           onChange={handleChange}
-//           fullWidth
-//         />
-//         <TextField
-//           label="Confirm Password"
-//           name="confirmPassword"
-//           type="password"
-//           value={form.confirmPassword}
-//           onChange={handleChange}
-//           fullWidth
-//         />
-//       </DialogContent>
-
-//       <DialogActions>
-//         <Button onClick={onClose} variant="outlined" disabled={isPending}>
-//           Cancel
-//         </Button>
-//         <Button onClick={handleReset} variant="contained" disabled={isPending}>
-//           {isPending ? "Updating..." : "Reset Password"}
-//         </Button>
-//       </DialogActions>
-//     </Dialog>
-//   );
-// };
-
-// export default ResetPasswordDialog;
-
+// src/components/ResetPasswordDialog.tsx
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -112,8 +8,8 @@ import {
   TextField,
   Button,
   Alert,
+  Snackbar,
 } from '@mui/material';
-import { AxiosError } from 'axios';
 import { useResetPasswordService } from '../api/apiServices';
 
 interface ResetPasswordDialogProps {
@@ -121,26 +17,32 @@ interface ResetPasswordDialogProps {
   onClose: () => void;
 }
 
-const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({ show, onClose }) => {
+const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
+  show,
+  onClose,
+}) => {
   const [form, setForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const { mutate, isPending } = useResetPasswordService();
+  // Pull status instead of isLoading
+  const { mutate, status } = useResetPasswordService();
+  const isLoading = status === 'pending';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleReset = () => {
-    setError(null);
-
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (form.newPassword !== form.confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
+    setError(null);
 
     mutate(
       {
@@ -149,59 +51,97 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({ show, onClose
       },
       {
         onSuccess: () => {
+          setSuccess(true);
           setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-          onClose();
         },
-        onError: (err) => {
-          const axiosErr = err as AxiosError<{ message?: string }>;
-          setError(axiosErr.response?.data?.message || 'Something went wrong.');
+        onError: (err: any) => {
+          setError(err.response?.data?.message || 'Something went wrong.');
         },
       }
     );
   };
 
   return (
-    <Dialog open={show} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Reset Password</DialogTitle>
-      <DialogContent
-        dividers
-        sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
+    <>
+      <Dialog
+        open={show}
+        onClose={onClose}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="reset-password-dialog-title"
       >
-        {error && <Alert severity="error">{error}</Alert>}
-        <TextField
-          label="Current Password"
-          name="currentPassword"
-          type="password"
-          value={form.currentPassword}
-          onChange={handleChange}
-          fullWidth
-        />
-        <TextField
-          label="New Password"
-          name="newPassword"
-          type="password"
-          value={form.newPassword}
-          onChange={handleChange}
-          fullWidth
-        />
-        <TextField
-          label="Confirm Password"
-          name="confirmPassword"
-          type="password"
-          value={form.confirmPassword}
-          onChange={handleChange}
-          fullWidth
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={isPending}>
-          Cancel
-        </Button>
-        <Button onClick={handleReset} variant="contained" disabled={isPending}>
-          {isPending ? 'Updating…' : 'Reset Password'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <form onSubmit={handleSubmit} noValidate>
+          <DialogTitle id="reset-password-dialog-title">
+            Reset Password
+          </DialogTitle>
+
+          <DialogContent
+            dividers
+            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
+            {error && <Alert severity="error">{error}</Alert>}
+
+            <TextField
+              label="Current Password"
+              name="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              value={form.currentPassword}
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="New Password"
+              name="newPassword"
+              type="password"
+              autoComplete="new-password"
+              value={form.newPassword}
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Confirm Password"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              fullWidth
+            />
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={onClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" disabled={isLoading}>
+              {isLoading ? 'Updating…' : 'Reset Password'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Snackbar
+        open={success}
+        autoHideDuration={3000}
+        onClose={() => {
+          setSuccess(false);
+          onClose();
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => {
+            setSuccess(false);
+            onClose();
+          }}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          Password updated successfully!
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
