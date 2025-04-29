@@ -1,17 +1,4 @@
-// import mongoose from "mongoose";
 
-// const initializeDB = () => {
-//   mongoose
-//     .connect(process.env.DATABASE_URI)
-//     .then(() => {
-//       console.log("Mongo DB Database connected successfully...");
-//     })
-//     .catch((err) => {
-//       console.log("Connection to Mongo DB failed...", err);
-//     });
-// };
-
-// export default initializeDB;
 
 import mongoose from "mongoose";
 
