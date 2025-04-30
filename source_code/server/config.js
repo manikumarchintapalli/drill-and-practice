@@ -14,11 +14,11 @@ export const NODE_ENV = process.env.NODE_ENV || "development";
 
 export const DATABASE_URI =
   process.env.DATABASE_URI ||
-  "mongodb+srv://manikumarchintapali:<db_password>@cluster0.e1wvmho.mongodb.net/drill_practice_db";
+  "mongodb+srv://manikumarchintapali:LC0wTSCes1IDHkOF@cluster0.e1wvmho.mongodb.net/drill_practice_db?retryWrites=true&w=majority";
 
 export const MONGO_URI_TEST =
   process.env.MONGO_URI_TEST ||
-  "mongodb+srv://manikumarchintapali:<db_password>@cluster0.e1wvmho.mongodb.net/drill_practice_db";
+  "mongodb+srv://manikumarchintapali:LC0wTSCes1IDHkOF@cluster0.e1wvmho.mongodb.net/drill_practice_db?retryWrites=true&w=majority";
 
 export const PORT_NUMBER = parseInt(process.env.PORT, 10) || 8080;
 
