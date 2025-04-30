@@ -7,8 +7,10 @@
 // });
 
 // server.js
-import app from "./src/index.js";
-import { PORT_NUMBER } from "./src/config.js";
+
+import { PORT_NUMBER } from "./config.js";
+import app from "./index.js";
+// import { PORT_NUMBER } from "./src/config.js";
 
 const PORT = PORT_NUMBER;
 app.listen(PORT, () => {
