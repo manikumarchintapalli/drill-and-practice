@@ -9,7 +9,7 @@ const getToken = (): string | null => localStorage.getItem(LOGIN_LS_TOKEN);
 
 // Axios instance
 const http: AxiosInstance = axios.create({
-  baseURL: "http://ec2-3-22-216-43.us-east-2.compute.amazonaws.com:8080",
+  baseURL: "http://ec2-3-149-242-97.us-east-2.compute.amazonaws.com:8080",
   withCredentials: false,
 });
 
