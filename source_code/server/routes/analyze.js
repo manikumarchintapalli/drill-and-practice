@@ -10,7 +10,7 @@ analyzeRoute.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const apiKey = "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"; // your actual key
+  const apiKey = "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"; // your actual key
   if (!apiKey) {
     return res.status(500).json({ error: 'Missing OpenRouter API key' });
   }
