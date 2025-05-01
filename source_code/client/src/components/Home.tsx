@@ -1,5 +1,3 @@
-// src/pages/Home.tsx
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -22,11 +20,13 @@ import {
 } from "../lib/theme";
 
 const groupQuestionsByTopic = (
-  questions: Array<{ topic?: string; [k: string]: any }>
+  questions: Array<{ topic?: string | { name?: string }; [k: string]: any }>
 ) => {
   const grouped: Record<string, typeof questions> = {};
   for (const q of questions) {
-    const topicName = q.topic;
+    const topicName =
+      typeof q.topic === "string" ? q.topic : q.topic?.name;
+
     if (!topicName) continue;
     if (!grouped[topicName]) grouped[topicName] = [];
     grouped[topicName].push(q);
@@ -47,14 +47,12 @@ const Home: React.FC = () => {
       sx={{
         bgcolor: BACKGROUND_COLOR,
         minHeight: "100vh",
-        // push below navbar: 56px mobile, 64px desktop
         pt: isMobile ? "56px" : "64px",
         pb: 10,
         scrollBehavior: "smooth",
       }}
     >
       <Toolbar />
-
       <Container maxWidth="lg">
         {/* Hero Section */}
         <Stack alignItems="center" spacing={3} mb={8}>
@@ -134,7 +132,7 @@ const Home: React.FC = () => {
           )}
         </Box>
 
-        {/* Quick Drill */}
+        {/* Quick Drill Section */}
         <Box mt={12} mb={8}>
           <Typography
             variant={isMobile ? "h6" : "h5"}

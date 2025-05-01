@@ -22,7 +22,7 @@ const verifyAdmin = (req, res) => {
 // ✅ Get all problems (public)
 questionsRoutes.get("/", async (req, res) => {
   try {
-    const problems = await Problem.find();
+    const problems = await Problem.find().populate("topic");
     res.json(problems);
   } catch (err) {
     console.error("❌ Failed to fetch problems:", err);
