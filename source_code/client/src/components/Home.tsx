@@ -42,26 +42,39 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // 1) Fetch all questions
-  const { data: questions = [], isLoading } = useGetAllQuestionsService();
-  // 2) Fetch all topics (with their names)
-  const { data: topics = [] } = useGetAllTopicsService();
+  // 1) fetch questions
+  const {
+    data: questions = [],
+    isLoading: questionsLoading,
+  } = useGetAllQuestionsService();
 
-  // 3) Build a lookup from topic _id → human-readable name
+  // 2) fetch topics
+  const {
+    data: topics = [],
+    isLoading: topicsLoading,
+  } = useGetAllTopicsService();
+
+  // 3) build id → name map
   const topicMap = useMemo(() => {
     const m: Record<string, string> = {};
     topics.forEach((t: any) => {
-      // backend returns { _id, name }
+      // your API returns { _id, name } (or maybe { id, name })
       const id = t._id ?? t.id;
-      if (id) m[id] = t.name;
+      if (id) {
+        m[id] = t.name;
+      }
     });
     return m;
   }, [topics]);
 
-  // 4) Group questions by topic _id
-  const grouped = useMemo(() => groupQuestionsByTopic(questions), [
-    questions,
-  ]);
+  // 4) group by topic _id
+  const grouped = useMemo(
+    () => groupQuestionsByTopic(questions),
+    [questions]
+  );
+
+  // show spinner until both have loaded
+  const loading = questionsLoading || topicsLoading;
 
   return (
     <Box
@@ -76,7 +89,7 @@ const Home: React.FC = () => {
       <Toolbar />
 
       <Container maxWidth="lg">
-        {/* Hero Section */}
+        {/* Hero */}
         <Stack alignItems="center" spacing={3} mb={8}>
           <Typography
             variant={isMobile ? "h5" : "h4"}
@@ -119,11 +132,11 @@ const Home: React.FC = () => {
             Explore Topics
           </Typography>
 
-          {isLoading ? (
+          {loading ? (
             <Stack alignItems="center" py={6} spacing={2}>
               <CircularProgress sx={{ color: PRIMARY_COLOR }} />
               <Typography sx={{ color: PRIMARY_COLOR }}>
-                Loading questions…
+                Loading…
               </Typography>
             </Stack>
           ) : (
@@ -138,8 +151,7 @@ const Home: React.FC = () => {
             >
               {Object.entries(grouped).map(
                 ([topicId, topicQuestions]) => {
-                  const topicName =
-                    topicMap[topicId] ?? topicId;
+                  const topicName = topicMap[topicId] ?? topicId;
                   return (
                     <Box
                       key={topicId}
@@ -152,9 +164,7 @@ const Home: React.FC = () => {
                         <TopicCard
                           topic={topicName}
                           questionCount={topicQuestions.length}
-                          firstQuestionId={
-                            topicQuestions[0]?._id
-                          }
+                          firstQuestionId={topicQuestions[0]?._id}
                         />
                       </Box>
                     </Box>
@@ -188,8 +198,7 @@ const Home: React.FC = () => {
             {Object.entries(grouped)
               .slice(0, 5)
               .map(([topicId, topicQuestions]) => {
-                const topicName =
-                  topicMap[topicId] ?? topicId;
+                const topicName = topicMap[topicId] ?? topicId;
                 const slug = topicName
                   .toLowerCase()
                   .replace(/\s+/g, "-");
@@ -197,9 +206,7 @@ const Home: React.FC = () => {
                   <Paper
                     key={topicId}
                     elevation={3}
-                    onClick={() =>
-                      navigate(`/learn/${slug}`)
-                    }
+                    onClick={() => navigate(`/learn/${slug}`)}
                     sx={{
                       p: 3,
                       textAlign: "center",
@@ -207,10 +214,8 @@ const Home: React.FC = () => {
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "center",
-                      bgcolor:
-                        theme.palette.background.paper,
-                      transition:
-                        "transform 0.3s, box-shadow 0.3s",
+                      bgcolor: theme.palette.background.paper,
+                      transition: "transform 0.3s, box-shadow 0.3s",
                       "&:hover": {
                         transform: "translateY(-4px)",
                         boxShadow: theme.shadows[6],
@@ -224,10 +229,7 @@ const Home: React.FC = () => {
                     >
                       {topicName}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
+                    <Typography variant="body2" color="text.secondary">
                       View key concepts for this topic
                     </Typography>
                   </Paper>
