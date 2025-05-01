@@ -21,3 +21,5 @@ export const JWT_PRIVATE_KEY =
 export const CLIENT_ORIGIN =
   process.env.CLIENT_ORIGIN ||
   "http://ec2-3-149-242-97.us-east-2.compute.amazonaws.com:5173";
+
+  export const OPENROUTER_API_KEY="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";
