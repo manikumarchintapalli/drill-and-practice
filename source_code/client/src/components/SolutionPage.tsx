@@ -16,9 +16,9 @@ import {
   Paper,
   TextField,
   Typography,
-  Toolbar,          // ← import Toolbar
+  Toolbar,
   useMediaQuery,
-  useTheme
+  useTheme,
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import FlashOnIcon from "@mui/icons-material/FlashOn";
@@ -26,7 +26,7 @@ import { useGetAllQuestionsService } from "../api/apiServices";
 
 interface Problem {
   _id: string;
-  topic: string;
+  topic?: string | { name?: string };  // <-- now optional
   title: string;
   description?: string;
   options: string[];
@@ -63,14 +63,24 @@ const SolutionPage: React.FC = () => {
   const { selectedOption, problem } = state;
   const isCorrect = selectedOption === problem.answerIndex;
 
-  // Filter and find next problem
+  // Safely extract a topic name (handles string, object, or undefined)
+  const getTopicName = (t?: string | { name?: string }): string =>
+    typeof t === "string" ? t : t?.name ?? "";
+
   const normalize = (s: string) =>
     s.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, "");
+
+  // Filter problems in the same topic by slug
   const topicProblems = allProblems.filter(
-    (p) => normalize(p.topic || "") === topicSlug
+    (p) => normalize(getTopicName(p.topic)) === topicSlug
   );
   const currentIndex = topicProblems.findIndex((p) => p._id === problem._id);
   const nextProblem = topicProblems[currentIndex + 1];
+
+  // PROD vs DEV base URL for your AWS endpoint
+  const apiBase = import.meta.env.PROD
+    ? "http://ec2-3-149-242-97.us-east-2.compute.amazonaws.com:8080"
+    : "";
 
   const handleAnalyze = async () => {
     if (!assumption.trim()) {
@@ -79,7 +89,7 @@ const SolutionPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/analyze", {
+      const res = await fetch(`${apiBase}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -93,7 +103,7 @@ const SolutionPage: React.FC = () => {
       const { feedback } = await res.json();
       setAnalysis(feedback);
     } catch (err) {
-      console.error(err);
+      console.error("Analyze API error:", err);
       alert("Failed to analyze. Please try again later.");
     } finally {
       setLoading(false);
@@ -107,7 +117,6 @@ const SolutionPage: React.FC = () => {
         background: "linear-gradient(135deg, #1f2428 0%, #3a3f44 50%, #ececec 100%)",
       }}
     >
-      {/* This Toolbar component adds the exact height of your AppBar */}
       <Toolbar />
 
       <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 } }}>
@@ -119,7 +128,6 @@ const SolutionPage: React.FC = () => {
           }}
         >
           <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            {/* Title */}
             <Typography
               variant={isMobile ? "h5" : "h4"}
               align="center"
@@ -130,7 +138,6 @@ const SolutionPage: React.FC = () => {
               Solution Overview
             </Typography>
 
-            {/* Question */}
             <Box mb={3}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 Question
@@ -147,7 +154,6 @@ const SolutionPage: React.FC = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Correctness */}
             <Alert severity={isCorrect ? "success" : "error"} sx={{ mb: 2 }}>
               {isCorrect
                 ? "Correct! You chose the right answer."
@@ -163,7 +169,6 @@ const SolutionPage: React.FC = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Assumption Input */}
             <Typography variant="h6" mb={1}>
               Your Assumption
             </Typography>
@@ -177,7 +182,6 @@ const SolutionPage: React.FC = () => {
               disabled={loading || !!analysis}
             />
 
-            {/* Analyze Button & Spark */}
             {!analysis && (
               <Box mt={3} textAlign="center">
                 <Button
@@ -202,7 +206,6 @@ const SolutionPage: React.FC = () => {
               </Box>
             )}
 
-            {/* AI Feedback Panel */}
             {analysis && (
               <Paper
                 elevation={3}
@@ -223,11 +226,14 @@ const SolutionPage: React.FC = () => {
                   AI Feedback
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-
                 <List disablePadding>
                   {analysis
                     .split("\n")
-                    .filter((l) => !!l.trim() && !l.toLowerCase().startsWith("correct answer"))
+                    .filter(
+                      (l) =>
+                        !!l.trim() &&
+                        !l.toLowerCase().startsWith("correct answer")
+                    )
                     .map((line, i) => (
                       <ListItem key={i} disableGutters>
                         <ListItemIcon sx={{ minWidth: 32 }}>
@@ -237,8 +243,6 @@ const SolutionPage: React.FC = () => {
                       </ListItem>
                     ))}
                 </List>
-
-                {/* Final bolded line */}
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="body1" fontWeight="bold">
                   Correct Answer: {problem.options[problem.answerIndex]}
@@ -246,13 +250,14 @@ const SolutionPage: React.FC = () => {
               </Paper>
             )}
 
-            {/* Next Question */}
             <Box mt={4}>
               {nextProblem ? (
                 <Button
                   variant="outlined"
                   fullWidth
-                  onClick={() => navigate(`/practice/${topicSlug}/${nextProblem._id}`)}
+                  onClick={() =>
+                    navigate(`/practice/${topicSlug}/${nextProblem._id}`)
+                  }
                 >
                   Next Question
                 </Button>
