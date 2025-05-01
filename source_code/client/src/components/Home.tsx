@@ -1,6 +1,6 @@
 // src/pages/Home.tsx
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -13,7 +13,10 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import { useGetAllQuestionsService } from "../api/apiServices";
+import {
+  useGetAllQuestionsService,
+  useGetAllTopicsService,
+} from "../api/apiServices";
 import TopicCard from "./TopicCard";
 import {
   BACKGROUND_COLOR,
@@ -26,10 +29,10 @@ const groupQuestionsByTopic = (
 ) => {
   const grouped: Record<string, typeof questions> = {};
   for (const q of questions) {
-    const topicName = q.topic;
-    if (!topicName) continue;
-    if (!grouped[topicName]) grouped[topicName] = [];
-    grouped[topicName].push(q);
+    const topicId = q.topic;
+    if (!topicId) continue;
+    if (!grouped[topicId]) grouped[topicId] = [];
+    grouped[topicId].push(q);
   }
   return grouped;
 };
@@ -39,15 +42,32 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  // 1) Fetch all questions
   const { data: questions = [], isLoading } = useGetAllQuestionsService();
-  const grouped = groupQuestionsByTopic(questions);
+  // 2) Fetch all topics (with their names)
+  const { data: topics = [] } = useGetAllTopicsService();
+
+  // 3) Build a lookup from topic _id → human-readable name
+  const topicMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    topics.forEach((t: any) => {
+      // backend returns { _id, name }
+      const id = t._id ?? t.id;
+      if (id) m[id] = t.name;
+    });
+    return m;
+  }, [topics]);
+
+  // 4) Group questions by topic _id
+  const grouped = useMemo(() => groupQuestionsByTopic(questions), [
+    questions,
+  ]);
 
   return (
     <Box
       sx={{
         bgcolor: BACKGROUND_COLOR,
         minHeight: "100vh",
-        // push below navbar: 56px mobile, 64px desktop
         pt: isMobile ? "56px" : "64px",
         pb: 10,
         scrollBehavior: "smooth",
@@ -116,20 +136,31 @@ const Home: React.FC = () => {
                 gap: 4,
               }}
             >
-              {Object.entries(grouped).map(([topic, topicQuestions]) => (
-                <Box
-                  key={topic}
-                  sx={{ display: "flex", justifyContent: "center" }}
-                >
-                  <Box sx={{ width: "100%", maxWidth: 320 }}>
-                    <TopicCard
-                      topic={topic}
-                      questionCount={topicQuestions.length}
-                      firstQuestionId={topicQuestions[0]?._id}
-                    />
-                  </Box>
-                </Box>
-              ))}
+              {Object.entries(grouped).map(
+                ([topicId, topicQuestions]) => {
+                  const topicName =
+                    topicMap[topicId] ?? topicId;
+                  return (
+                    <Box
+                      key={topicId}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Box sx={{ width: "100%", maxWidth: 320 }}>
+                        <TopicCard
+                          topic={topicName}
+                          questionCount={topicQuestions.length}
+                          firstQuestionId={
+                            topicQuestions[0]?._id
+                          }
+                        />
+                      </Box>
+                    </Box>
+                  );
+                }
+              )}
             </Box>
           )}
         </Box>
@@ -156,13 +187,19 @@ const Home: React.FC = () => {
           >
             {Object.entries(grouped)
               .slice(0, 5)
-              .map(([topic]) => {
-                const slug = topic.toLowerCase().replace(/\s+/g, "-");
+              .map(([topicId, topicQuestions]) => {
+                const topicName =
+                  topicMap[topicId] ?? topicId;
+                const slug = topicName
+                  .toLowerCase()
+                  .replace(/\s+/g, "-");
                 return (
                   <Paper
-                    key={slug}
+                    key={topicId}
                     elevation={3}
-                    onClick={() => navigate(`/learn/${slug}`)}
+                    onClick={() =>
+                      navigate(`/learn/${slug}`)
+                    }
                     sx={{
                       p: 3,
                       textAlign: "center",
@@ -170,8 +207,10 @@ const Home: React.FC = () => {
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "center",
-                      bgcolor: theme.palette.background.paper,
-                      transition: "transform 0.3s, box-shadow 0.3s",
+                      bgcolor:
+                        theme.palette.background.paper,
+                      transition:
+                        "transform 0.3s, box-shadow 0.3s",
                       "&:hover": {
                         transform: "translateY(-4px)",
                         boxShadow: theme.shadows[6],
@@ -183,9 +222,12 @@ const Home: React.FC = () => {
                       fontWeight="bold"
                       sx={{ color: SECONDARY_COLOR, mb: 1 }}
                     >
-                      {topic}
+                      {topicName}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                    >
                       View key concepts for this topic
                     </Typography>
                   </Paper>

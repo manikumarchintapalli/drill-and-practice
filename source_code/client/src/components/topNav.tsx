@@ -3,19 +3,17 @@ import { Link } from "react-router-dom";
 import {
   AppBar,
   Toolbar,
+  Container,
+  Box,
   Typography,
   Button,
-  Box,
-  useTheme,
   useMediaQuery,
-  Container,
+  useTheme,
 } from "@mui/material";
+import Avatar from "@mui/material/Avatar";
+import { alpha } from "@mui/material/styles";
 import { useWebsiteData } from "../api/apiServices";
-import {
-  SECONDARY_COLOR,
-  HIGHLIGHTS_COLOR,
-  BACKGROUND_COLOR,
-} from "../lib/theme";
+import { SECONDARY_COLOR, HIGHLIGHTS_COLOR } from "../lib/theme";
 
 const TopNav: React.FC = () => {
   const { data } = useWebsiteData();
@@ -25,27 +23,37 @@ const TopNav: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  // match these heights in the spacer Toolbar below
+  const NAV_HEIGHT = isMobile ? 80 : 95;
+
   return (
     <>
-      {/* AppBar with fixed position */}
       <AppBar
         position="fixed"
-        elevation={2}
+        elevation={0}
         sx={{
-          backgroundColor: SECONDARY_COLOR,
-          py: { xs: 1, sm: 1.5 },
+          background: SECONDARY_COLOR,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          zIndex: theme.zIndex.appBar,
         }}
       >
-        <Container maxWidth="lg">
+        <Container
+          maxWidth={false}
+          disableGutters
+          sx={{ px: { xs: 2, sm: 4, md: 6 } }}
+        >
           <Toolbar
             disableGutters
             sx={{
               display: "flex",
-              alignItems: "center",
               justifyContent: "space-between",
+              alignItems: "center",
+              // fixed height + vertical padding
+              height: NAV_HEIGHT,
+              py: { xs: 1.5, sm: 2 },
             }}
           >
-            {/* Logo and Brand */}
+            {/* Logo + Brand */}
             <Box
               component={Link}
               to="/"
@@ -55,45 +63,54 @@ const TopNav: React.FC = () => {
                 textDecoration: "none",
               }}
             >
-              <Box
-                component="img"
+              <Avatar
                 src={logo}
-                alt="Logo"
+                alt="logo"
                 sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  mr: 1.5,
-                  border: `2px solid ${HIGHLIGHTS_COLOR}`,
-                  backgroundColor: BACKGROUND_COLOR,
+                  width: isMobile ? 40 : 56,
+                  height: isMobile ? 40 : 56,
+                  border: `3px solid gold`,
+                  boxShadow: "0 3px 10px rgba(0,0,0,0.25)",
+                  backgroundColor: alpha(HIGHLIGHTS_COLOR, 0.1),
+                  transition: "transform 0.2s",
+                  "&:hover": { transform: "scale(1.1)" },
                 }}
               />
+
               <Typography
                 variant={isMobile ? "h6" : "h5"}
                 sx={{
-                  fontWeight: "bold",
-                  color: HIGHLIGHTS_COLOR,
-                  letterSpacing: 1,
+                  ml: 1.5,
+                  color: "#ffffff",
+                  fontWeight: 800,
                   textTransform: "uppercase",
+                  letterSpacing: 1,
                 }}
               >
                 {brand}
               </Typography>
             </Box>
 
-            {/* Sign In Button */}
+            {/* Sign In */}
             <Button
-              variant="outlined"
               component={Link}
               to="/sign-in"
+              variant="contained"
               size={isMobile ? "small" : "medium"}
               sx={{
-                borderColor: HIGHLIGHTS_COLOR,
-                color: HIGHLIGHTS_COLOR,
+                backgroundColor: HIGHLIGHTS_COLOR,
+                color: SECONDARY_COLOR,
+                textTransform: "none",
+                fontWeight: 600,
+                px: 4,
+                py: 1.5,
+                borderRadius: "50px",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                transition: "transform 0.2s, box-shadow 0.2s",
                 "&:hover": {
-                  backgroundColor: HIGHLIGHTS_COLOR,
-                  color: SECONDARY_COLOR,
+                  backgroundColor: alpha(HIGHLIGHTS_COLOR, 0.85),
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 6px 24px rgba(0,0,0,0.25)",
                 },
               }}
             >
@@ -103,8 +120,8 @@ const TopNav: React.FC = () => {
         </Container>
       </AppBar>
 
-      {/* Spacer to push the content down below navbar */}
-      <Toolbar />
+      {/* spacer so page content sits below the fixed navbar */}
+      <Toolbar sx={{ height: NAV_HEIGHT }} />
     </>
   );
 };
