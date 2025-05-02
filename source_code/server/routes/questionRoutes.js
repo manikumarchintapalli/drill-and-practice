@@ -24,29 +24,15 @@ const verifyAdmin = (req, res) => {
 };
 
 // —————————————————————————
-// GET all problems (public), enriched with topic info
+// GET all problems (public), with topic populated
 // —————————————————————————
 questionsRoutes.get("/", async (req, res) => {
   try {
-    // 1. Fetch raw problems (topic is still a slug string)
-    const problems = await Problem.find().lean();
+    const problems = await Problem.find()
+      .populate("topic", "name slug") // Only return topic name and slug
+      .lean();
 
-    // 2. Build a unique list of that slug field
-    const slugs = [...new Set(problems.map((p) => p.topic))];
-
-    // 3. Fetch matching topics by slug
-    const topics = await Topic.find({ slug: { $in: slugs } }).lean();
-    const slugToTopic = Object.fromEntries(
-      topics.map((t) => [t.slug, { _id: t._id, name: t.name, slug: t.slug }])
-    );
-
-    // 4. Merge the real topic object into each problem
-    const enriched = problems.map((p) => ({
-      ...p,
-      topic: slugToTopic[p.topic] || { name: p.topic, slug: p.topic },
-    }));
-
-    res.json(enriched);
+    res.json(problems);
   } catch (err) {
     console.error("❌ Failed to fetch problems:", err);
     res.status(500).json({ error: "Failed to fetch problems" });

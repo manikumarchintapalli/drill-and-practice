@@ -9,6 +9,7 @@ import {
   Toolbar,
   useTheme,
   useMediaQuery,
+  Paper,
 } from "@mui/material";
 import { useGetAllQuestionsService } from "../api/apiServices";
 import TopicCard from "../components/TopicCard";
@@ -183,16 +184,37 @@ const Home: React.FC = () => {
               gap: 4,
             }}
           >
-            {topics.slice(0, 5).map(({ name, slug, questions }) => (
-              <TopicCard
+            {topics.slice(0, 5).map(({ name, slug }) => (
+              <Paper
                 key={slug}
-                topic={name}
-                questionCount={questions.length}
-                firstQuestionId={questions[0]._id}
-                onClick={() =>
-                  navigate(`/practice/${slug}/${questions[0]._id}`)
-                }
-              />
+                elevation={3}
+                onClick={() => navigate(`/learn/${slug}`)}
+                sx={{
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  bgcolor: theme.palette.background.paper,
+                  transition: "transform 0.3s, box-shadow 0.3s",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: theme.shadows[6],
+                  },
+                }}
+              >
+                <Typography
+                  variant={isMobile ? "subtitle1" : "h6"}
+                  fontWeight="bold"
+                  sx={{ color: SECONDARY_COLOR, mb: 1 }}
+                >
+                  {name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  View key concepts for this topic
+                </Typography>
+              </Paper>
             ))}
           </Box>
         </Box>
