@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -6,32 +6,60 @@ import {
   Stack,
   Typography,
   CircularProgress,
-  Paper,
   Toolbar,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
 import { useGetAllQuestionsService } from "../api/apiServices";
-import TopicCard from "./TopicCard";
+import TopicCard from "../components/TopicCard";
 import {
   BACKGROUND_COLOR,
   PRIMARY_COLOR,
   SECONDARY_COLOR,
 } from "../lib/theme";
 
-const groupQuestionsByTopic = (
-  questions: Array<{ topic?: string | { name?: string }; [k: string]: any }>
-) => {
-  const grouped: Record<string, typeof questions> = {};
-  for (const q of questions) {
-    const topicName =
-      typeof q.topic === "string" ? q.topic : q.topic?.name;
+type TopicField = string | { _id?: string; name?: string; slug?: string };
 
-    if (!topicName) continue;
-    if (!grouped[topicName]) grouped[topicName] = [];
-    grouped[topicName].push(q);
+const getTopicName = (t?: TopicField): string =>
+  typeof t === "string" ? t : t?.name ?? "";
+
+const getTopicSlug = (t?: TopicField): string => {
+  if (!t) return "";
+  if (typeof t === "string") {
+    return t
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]+/g, "");
   }
-  return grouped;
+  return (
+    t.slug ||
+    t.name
+      ?.toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]+/g, "") ||
+    ""
+  );
+};
+
+const groupQuestionsByTopic = (
+  questions: Array<{ topic?: TopicField; _id: string }>
+) => {
+  const map: Record<
+    string,
+    { name: string; slug: string; questions: typeof questions }
+  > = {};
+
+  for (const q of questions) {
+    const name = getTopicName(q.topic);
+    const slug = getTopicSlug(q.topic);
+    if (!name || !slug) continue;
+
+    if (!map[name]) {
+      map[name] = { name, slug, questions: [] };
+    }
+    map[name].questions.push(q);
+  }
+  return Object.values(map);
 };
 
 const Home: React.FC = () => {
@@ -40,7 +68,7 @@ const Home: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const { data: questions = [], isLoading } = useGetAllQuestionsService();
-  const grouped = groupQuestionsByTopic(questions);
+  const topics = useMemo(() => groupQuestionsByTopic(questions), [questions]);
 
   return (
     <Box
@@ -54,7 +82,7 @@ const Home: React.FC = () => {
     >
       <Toolbar />
       <Container maxWidth="lg">
-        {/* Hero Section */}
+        {/* Hero */}
         <Stack alignItems="center" spacing={3} mb={8}>
           <Typography
             variant={isMobile ? "h5" : "h4"}
@@ -114,16 +142,19 @@ const Home: React.FC = () => {
                 gap: 4,
               }}
             >
-              {Object.entries(grouped).map(([topic, topicQuestions]) => (
+              {topics.map(({ name, slug, questions }) => (
                 <Box
-                  key={topic}
+                  key={slug}
                   sx={{ display: "flex", justifyContent: "center" }}
                 >
                   <Box sx={{ width: "100%", maxWidth: 320 }}>
                     <TopicCard
-                      topic={topic}
-                      questionCount={topicQuestions.length}
-                      firstQuestionId={topicQuestions[0]?._id}
+                      topic={name}
+                      questionCount={questions.length}
+                      firstQuestionId={questions[0]._id}
+                      onClick={() =>
+                        navigate(`/practice/${slug}/${questions[0]._id}`)
+                      }
                     />
                   </Box>
                 </Box>
@@ -132,7 +163,7 @@ const Home: React.FC = () => {
           )}
         </Box>
 
-        {/* Quick Drill Section */}
+        {/* Quick Drill */}
         <Box mt={12} mb={8}>
           <Typography
             variant={isMobile ? "h6" : "h5"}
@@ -152,43 +183,17 @@ const Home: React.FC = () => {
               gap: 4,
             }}
           >
-            {Object.entries(grouped)
-              .slice(0, 5)
-              .map(([topic]) => {
-                const slug = topic.toLowerCase().replace(/\s+/g, "-");
-                return (
-                  <Paper
-                    key={slug}
-                    elevation={3}
-                    onClick={() => navigate(`/learn/${slug}`)}
-                    sx={{
-                      p: 3,
-                      textAlign: "center",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      bgcolor: theme.palette.background.paper,
-                      transition: "transform 0.3s, box-shadow 0.3s",
-                      "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: theme.shadows[6],
-                      },
-                    }}
-                  >
-                    <Typography
-                      variant={isMobile ? "subtitle1" : "h6"}
-                      fontWeight="bold"
-                      sx={{ color: SECONDARY_COLOR, mb: 1 }}
-                    >
-                      {topic}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      View key concepts for this topic
-                    </Typography>
-                  </Paper>
-                );
-              })}
+            {topics.slice(0, 5).map(({ name, slug, questions }) => (
+              <TopicCard
+                key={slug}
+                topic={name}
+                questionCount={questions.length}
+                firstQuestionId={questions[0]._id}
+                onClick={() =>
+                  navigate(`/practice/${slug}/${questions[0]._id}`)
+                }
+              />
+            ))}
           </Box>
         </Box>
       </Container>

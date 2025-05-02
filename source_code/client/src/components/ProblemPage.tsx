@@ -1,5 +1,5 @@
 // src/pages/ProblemPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -22,14 +22,35 @@ import {
   Question,
 } from '../api/apiServices';
 
+type TopicField = 
+  | string 
+  | { _id: string; name: string; slug: string };
+
 interface Problem {
   _id: string;
-  topic?: string;
+  topic?: TopicField;
   title: string;
   description: string;
   options: string[];
   answerIndex: number;
 }
+
+// Helpers to extract slug/name safely
+const getTopicSlug = (t?: TopicField): string => {
+  if (!t) return '';
+  if (typeof t === 'string') {
+    return t
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]+/g, '');
+  }
+  return t.slug.toLowerCase();
+};
+
+const getTopicName = (t?: TopicField): string => {
+  if (!t) return '';
+  return typeof t === 'string' ? t : t.name;
+};
 
 const ProblemPage: React.FC = () => {
   const { topicSlug, index: problemId } = useParams<{
@@ -40,44 +61,40 @@ const ProblemPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // 1) Fetch raw questions
   const { data: rawQuestions = [], isLoading } = useGetAllQuestionsService();
-  // 2) Mutation for stats
   const { mutate: updateDashboardStats, status } =
     useUpdateDashboardStatsService();
   const isSubmitting = status === 'pending';
 
-  // 3) Map into our Problem type
-  const allProblems: Problem[] = rawQuestions.map((q: Question) => ({
-    _id: q._id,
-    topic: q.topic,
-    title: (q as any).title,
-    description: (q as any).description,
-    options: (q as any).options,
-    answerIndex: (q as any).answerIndex,
-  }));
+  // Map API Questions → our Problem shape
+  const allProblems: Problem[] = useMemo(
+    () =>
+      rawQuestions.map((q: Question) => ({
+        _id: q._id,
+        topic: q.topic,
+        title: q.title,
+        description: q.description,
+        options: q.options,
+        answerIndex: q.answerIndex,
+      })),
+    [rawQuestions]
+  );
 
-  // 4) State for the user’s choice
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-
-  // 5) Locate the current problem
-  const problem = allProblems.find((p) => p._id === problemId);
-
-  // 6) Filter by topic slug
-  const filtered = allProblems.filter((p) =>
-    (p.topic ?? '')
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w-]+/g, '') === topicSlug
+  // Filter by slug, find current index & problem
+  const filtered = useMemo(
+    () => allProblems.filter((p) => getTopicSlug(p.topic) === topicSlug),
+    [allProblems, topicSlug]
   );
   const currentIndex = filtered.findIndex((p) => p._id === problemId);
+  const problem = allProblems.find((p) => p._id === problemId);
 
-  // 7) Reset selection on problem change
+  // Reset choice when problem changes
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   useEffect(() => {
     setSelectedOption(null);
   }, [problemId]);
 
-  // 8) Loading & not found states
+  // Loading & missing states
   if (isLoading) {
     return (
       <Container sx={{ py: 10, textAlign: 'center' }}>
@@ -96,7 +113,7 @@ const ProblemPage: React.FC = () => {
     );
   }
 
-  // 9) Handlers
+  // Handlers
   const handleOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedOption(parseInt(e.target.value, 10));
   };
@@ -104,38 +121,37 @@ const ProblemPage: React.FC = () => {
     if (selectedOption === null) return;
     const isCorrect = selectedOption === problem.answerIndex;
     updateDashboardStats(
-      { topic: problem.topic ?? '', isCorrect },
+      { topic: getTopicName(problem.topic), isCorrect },
       {
-        onSuccess: () => {
+        onSuccess: () =>
           navigate(`/solution/${topicSlug}/${problemId}`, {
             state: { selectedOption, problem },
-          });
-        },
+          }),
       }
     );
   };
   const goTo = (offset: number) => {
     const next = filtered[currentIndex + offset];
-    if (next) navigate(`/practice/${topicSlug}/${next._id}`);
+    if (next) {
+      navigate(`/practice/${topicSlug}/${next._id}`);
+    }
   };
 
-  // 10) Render
+  // Render
   return (
     <Box
       sx={{
         bgcolor: 'background.default',
         minHeight: '100vh',
-        // reserve space for your fixed navbar
         pt: { xs: '72px', sm: '96px' },
         pb: theme.spacing(6),
       }}
     >
-      {/* optional: keep Toolbar if you use MUI AppBar */}
       <Toolbar />
 
       <Container maxWidth="md">
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Topic: {problem.topic ?? 'Unknown'}
+          Topic: {getTopicName(problem.topic) || 'Unknown'}
         </Typography>
 
         <Typography
@@ -160,7 +176,7 @@ const ProblemPage: React.FC = () => {
           value={selectedOption === null ? '' : selectedOption}
           onChange={handleOptionChange}
         >
-          {problem.options.map((opt: string, idx: number) => (
+          {problem.options.map((opt, idx) => (
             <FormControlLabel
               key={idx}
               value={idx}
@@ -183,7 +199,7 @@ const ProblemPage: React.FC = () => {
             fullWidth
             variant="outlined"
             onClick={() => goTo(-1)}
-            disabled={currentIndex === 0}
+            disabled={currentIndex <= 0}
           >
             Previous
           </Button>

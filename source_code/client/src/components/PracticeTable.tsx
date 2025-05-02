@@ -1,5 +1,4 @@
 // src/components/PracticeTable.tsx
-
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
@@ -24,28 +23,47 @@ import {
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useNavigate } from 'react-router-dom';
 
+// ————————————————————————————————————————————————
+// Adjusted Problem type so topic can be object or string
+// ————————————————————————————————————————————————
 export interface Problem {
   id: string;
   title: string;
-  topic: string;
+  topic?: TopicField;
   status: 'todo' | 'attempted' | 'solved';
   difficulty: 'Easy' | 'Medium' | 'Hard';
 }
 
-interface PracticeTableProps {
-  problems: Problem[];
-  isLoading?: boolean;
-}
+type TopicField = 
+  | string 
+  | { _id: string; name: string; slug: string };
 
-const slugify = (text: string) =>
+// ————————————————————————————————————————————————
+// Pure‐string slugifier (only for real strings)
+// ————————————————————————————————————————————————
+const slugifyText = (text: string) =>
   text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
+// ————————————————————————————————————————————————
+// Extract a display‐name from our union
+// ————————————————————————————————————————————————
+const getTopicName = (t?: TopicField): string =>
+  typeof t === 'string' ? t : t?.name || '';
+
+// ————————————————————————————————————————————————
+// Extract a slug from our union
+// ————————————————————————————————————————————————
+const getTopicSlug = (t?: TopicField): string => {
+  if (!t) return '';
+  return typeof t === 'string' ? slugifyText(t) : t.slug;
+};
 
 const ITEMS_PER_PAGE = 10;
 
-const PracticeTable: React.FC<PracticeTableProps> = ({
-  problems,
-  isLoading = false,
-}) => {
+const PracticeTable: React.FC<{
+  problems: Problem[];
+  isLoading?: boolean;
+}> = ({ problems, isLoading = false }) => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'All' | Problem['status']>('All');
   const [filterDifficulty, setFilterDifficulty] = useState<'All' | Problem['difficulty']>('All');
@@ -55,36 +73,36 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
   const navigate = useNavigate();
   const theme = useTheme();
 
-  // whenever the source problems change, reset our local copy
   useEffect(() => {
     setLocalProblems(problems);
   }, [problems]);
 
-  // Automatically reset to page 1 when filters or search change
   useEffect(() => {
     setPage(1);
   }, [search, filterStatus, filterDifficulty]);
 
   const handleStatusChange = (id: string, newStatus: Problem['status']) => {
-    setLocalProblems(lp =>
-      lp.map(p => (p.id === id ? { ...p, status: newStatus } : p))
+    setLocalProblems((lp) =>
+      lp.map((p) => (p.id === id ? { ...p, status: newStatus } : p))
     );
   };
 
-  // Apply search & filters
+  // — Apply search & filters using getTopicName() for topic
   const filtered = localProblems
-    .filter(p => {
+    .filter((p) => {
       const q = search.toLowerCase();
+      const topicName = getTopicName(p.topic).toLowerCase();
       return (
         !search ||
-        p.topic.toLowerCase().includes(q) ||
+        topicName.includes(q) ||
         p.title.toLowerCase().includes(q)
       );
     })
-    .filter(p => (filterStatus === 'All' ? true : p.status === filterStatus))
-    .filter(p => (filterDifficulty === 'All' ? true : p.difficulty === filterDifficulty));
+    .filter((p) => (filterStatus === 'All' ? true : p.status === filterStatus))
+    .filter((p) =>
+      filterDifficulty === 'All' ? true : p.difficulty === filterDifficulty
+    );
 
-  // Compute pagination
   const pageCount = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice(
     (page - 1) * ITEMS_PER_PAGE,
@@ -117,12 +135,13 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
         mb={4}
       >
         <Stack direction="row" spacing={2} flexWrap="wrap">
+          {/* Status Filter */}
           <FormControl size="small" sx={{ minWidth: 140 }}>
             <InputLabel>Status</InputLabel>
             <Select
               value={filterStatus}
               label="Status"
-              onChange={e => setFilterStatus(e.target.value as any)}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
             >
               <MenuItem value="All">All</MenuItem>
               <MenuItem value="todo">To Do</MenuItem>
@@ -131,12 +150,13 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
             </Select>
           </FormControl>
 
+          {/* Difficulty Filter */}
           <FormControl size="small" sx={{ minWidth: 140 }}>
             <InputLabel>Difficulty</InputLabel>
             <Select
               value={filterDifficulty}
               label="Difficulty"
-              onChange={e => setFilterDifficulty(e.target.value as any)}
+              onChange={(e) => setFilterDifficulty(e.target.value as any)}
             >
               <MenuItem value="All">All</MenuItem>
               <MenuItem value="Easy">Easy</MenuItem>
@@ -145,13 +165,14 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
             </Select>
           </FormControl>
 
+          {/* Search */}
           <TextField
             size="small"
             variant="outlined"
             placeholder="Search"
             sx={{ minWidth: 220 }}
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </Stack>
       </Stack>
@@ -176,13 +197,13 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
           </TableHead>
 
           <TableBody>
-            {paginated.map(p => (
+            {paginated.map((p) => (
               <TableRow key={p.id}>
                 <TableCell align="center">
                   <FormControl fullWidth size="small">
                     <Select
                       value={p.status}
-                      onChange={e =>
+                      onChange={(e) =>
                         handleStatusChange(p.id, e.target.value as Problem['status'])
                       }
                     >
@@ -214,7 +235,9 @@ const PracticeTable: React.FC<PracticeTableProps> = ({
                     size="small"
                     startIcon={<PlayArrowIcon />}
                     onClick={() =>
-                      navigate(`/practice/${slugify(p.topic)}/${p.id}`)
+                      navigate(
+                        `/practice/${getTopicSlug(p.topic)}/${p.id}`
+                      )
                     }
                     sx={{ whiteSpace: 'nowrap' }}
                   >

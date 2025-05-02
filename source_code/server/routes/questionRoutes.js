@@ -1,9 +1,13 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import Problem from "../models/Problem.js";
+import Topic from "../models/Topic.js";
 
 const questionsRoutes = express.Router();
 
+// —————————————————————————
+// Admin check (unchanged)
+// —————————————————————————
 const verifyAdmin = (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return { error: "Access Denied. No token provided.", status: 401 };
@@ -19,28 +23,47 @@ const verifyAdmin = (req, res) => {
   }
 };
 
-// ✅ Get all problems (public)
+// —————————————————————————
+// GET all problems (public), enriched with topic info
+// —————————————————————————
 questionsRoutes.get("/", async (req, res) => {
   try {
-    const problems = await Problem.find().populate("topic");
-    res.json(problems);
+    // 1. Fetch raw problems (topic is still a slug string)
+    const problems = await Problem.find().lean();
+
+    // 2. Build a unique list of that slug field
+    const slugs = [...new Set(problems.map((p) => p.topic))];
+
+    // 3. Fetch matching topics by slug
+    const topics = await Topic.find({ slug: { $in: slugs } }).lean();
+    const slugToTopic = Object.fromEntries(
+      topics.map((t) => [t.slug, { _id: t._id, name: t.name, slug: t.slug }])
+    );
+
+    // 4. Merge the real topic object into each problem
+    const enriched = problems.map((p) => ({
+      ...p,
+      topic: slugToTopic[p.topic] || { name: p.topic, slug: p.topic },
+    }));
+
+    res.json(enriched);
   } catch (err) {
     console.error("❌ Failed to fetch problems:", err);
     res.status(500).json({ error: "Failed to fetch problems" });
   }
 });
 
-// ✅ Add new problem (admin-only)
+// —————————————————————————
+// Add new problem (admin-only)
+// —————————————————————————
 questionsRoutes.post("/", async (req, res) => {
   const auth = verifyAdmin(req, res);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });
 
   try {
     const { topic, title, description, options, answerIndex, difficulty } = req.body;
-
     const problem = new Problem({ topic, title, description, options, answerIndex, difficulty });
     await problem.save();
-
     res.status(201).json(problem);
   } catch (err) {
     console.error("❌ Failed to create problem:", err);
@@ -48,7 +71,9 @@ questionsRoutes.post("/", async (req, res) => {
   }
 });
 
-// ✅ Update problem (admin-only)
+// —————————————————————————
+// Update problem (admin-only)
+// —————————————————————————
 questionsRoutes.put("/:id", async (req, res) => {
   const auth = verifyAdmin(req, res);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });
@@ -62,7 +87,9 @@ questionsRoutes.put("/:id", async (req, res) => {
   }
 });
 
-// ✅ Delete problem (admin-only)
+// —————————————————————————
+// Delete problem (admin-only)
+// —————————————————————————
 questionsRoutes.delete("/:id", async (req, res) => {
   const auth = verifyAdmin(req, res);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });

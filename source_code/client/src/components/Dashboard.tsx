@@ -28,12 +28,47 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-interface Question { _id: string; topic?: string }
-interface Topic { name: string }
-interface TopicStats { attempted: number; correct: number; solved?: string[] }
+// ————————————————————————————————————————————————
+// Local types to cover both old & new backend shape
+// ————————————————————————————————————————————————
+type TopicField =
+  | string
+  | { _id: string; name: string; slug: string };
+
+interface Question {
+  _id: string;
+  topic?: TopicField;
+}
+
+interface Topic {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
+interface TopicStats {
+  attempted: number;
+  correct: number;
+  solved?: string[];
+}
+
 type DashboardStats = Record<string, TopicStats>;
 
-const normalize = (s?: string) => s?.trim().toLowerCase() || '';
+// ————————————————————————————————————————————————
+// Helpers
+// ————————————————————————————————————————————————
+// Normalize a plain string to lower-case key
+const normalize = (s: string): string => s.trim().toLowerCase();
+
+// Safely pull out the human name from our union
+const getTopicName = (t?: TopicField): string =>
+  typeof t === 'string' ? t : t?.name ?? '';
+
+// Safely pull out the slug from our union
+const getTopicSlug = (t?: TopicField): string =>
+  typeof t === 'string'
+    ? normalize(t).replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+    : t?.slug ?? '';
 
 const Dashboard: React.FC = () => {
   const theme = useTheme();
@@ -46,13 +81,14 @@ const Dashboard: React.FC = () => {
     theme.palette.error.main,
   ];
 
+  // 1️⃣ Stats, topics & problems from your hooks
   const {
     data: stats = {} as DashboardStats,
     isLoading: statsLoading,
     refetch: refetchStats,
   } = useDashboardStatsService();
   const {
-    data: topics = [] as Topic[],
+    data: allTopics = [] as Topic[],
     isLoading: topicsLoading,
   } = useGetAllTopicsService();
   const {
@@ -61,6 +97,7 @@ const Dashboard: React.FC = () => {
   } = useGetAllQuestionsService();
   const { mutate: resetDashboardStats } = useResetDashboardStatsService();
 
+  // ⏳ Loading spinner
   if (statsLoading || topicsLoading || problemsLoading) {
     return (
       <Container
@@ -75,14 +112,20 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const lookup = topics.reduce<Record<string, boolean>>((acc, t) => {
-    acc[normalize(t.name)] = true;
+  // 2️⃣ Build a map: normalized topic‐name → { name, slug }
+  const topicsByKey = allTopics.reduce<
+    Record<string, { name: string; slug: string }>
+  >((acc, t) => {
+    acc[normalize(t.name)] = { name: t.name, slug: t.slug };
     return acc;
   }, {});
-  const topicNames = Object.keys(stats).filter(name =>
-    lookup[normalize(name)]
+
+  // 3️⃣ Only show stats for topics that actually exist
+  const topicKeys = Object.keys(stats).filter((topicName) =>
+    Boolean(topicsByKey[normalize(topicName)])
   );
 
+  // Chart‐data helper
   const getTopicChartData = (topicName: string) => {
     const { correct = 0, attempted = 0 } = stats[topicName] || {};
     return [
@@ -91,6 +134,7 @@ const Dashboard: React.FC = () => {
     ];
   };
 
+  // 4️⃣ “Start new session” resets & navigates
   const handleStartPractice = () => {
     resetDashboardStats(undefined, {
       onSuccess: async () => {
@@ -103,21 +147,24 @@ const Dashboard: React.FC = () => {
     });
   };
 
+  // ————————————————————————————————————————————————
+  // Render
+  // ————————————————————————————————————————————————
   return (
     <Box
       sx={{
         bgcolor: 'background.default',
         minHeight: '100vh',
-        pt: { xs: '56px', sm: '64px' },   // push below navbar
+        pt: { xs: '56px', sm: '64px' },
         pb: { xs: 4, sm: 6 },
-        scrollBehavior: 'smooth',         // smooth scroll
+        scrollBehavior: 'smooth',
       }}
     >
-      <Toolbar /> {/* spacer for AppBar */}
+      <Toolbar />
 
       <Container>
         <Typography
-          variant={isMobile ? "h5" : "h4"}
+          variant={isMobile ? 'h5' : 'h4'}
           fontWeight="bold"
           textAlign="center"
           mb={3}
@@ -145,15 +192,23 @@ const Dashboard: React.FC = () => {
             mb: 6,
           }}
         >
-          {topicNames.map(name => {
-            const key = normalize(name);
-            const data = getTopicChartData(name);
-            const problems = allProblems.filter(q => normalize(q.topic) === key);
-            const firstUnsolved = problems.find(q => !stats[name]?.solved?.includes(q._id));
+          {topicKeys.map((topicName) => {
+            const key = normalize(topicName);
+            const { name, slug } = topicsByKey[key];
+            const data = getTopicChartData(topicName);
+
+            // 👉 find all problems for this topic
+            const problems = allProblems.filter(
+              (q) => normalize(getTopicName(q.topic)) === key
+            );
+            // 👉 pick the first one not in stats.solved
+            const firstUnsolved = problems.find(
+              (q) => !stats[topicName]?.solved?.includes(q._id)
+            );
 
             return (
               <Paper
-                key={name}
+                key={topicName}
                 elevation={3}
                 sx={{
                   p: 3,
@@ -181,7 +236,10 @@ const Dashboard: React.FC = () => {
                         label
                       >
                         {data.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          <Cell
+                            key={i}
+                            fill={COLORS[i % COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -189,11 +247,15 @@ const Dashboard: React.FC = () => {
                   </ResponsiveContainer>
                 </Box>
 
-                <Typography fontSize={14} color="text.secondary" mt={2}>
-                  Questions Attempted: {stats[name].attempted}
+                <Typography
+                  fontSize={14}
+                  color="text.secondary"
+                  mt={2}
+                >
+                  Questions Attempted: {stats[topicName].attempted}
                 </Typography>
                 <Typography fontSize={14} color="text.secondary">
-                  Correct: {stats[name].correct}
+                  Correct: {stats[topicName].correct}
                 </Typography>
 
                 {firstUnsolved && (
@@ -201,9 +263,16 @@ const Dashboard: React.FC = () => {
                     fullWidth
                     variant="outlined"
                     size="small"
-                    sx={{ mt: 2, borderRadius: 2, transition: 'transform 0.2s', '&:hover':{ transform:'scale(1.02)' } }}
+                    sx={{
+                      mt: 2,
+                      borderRadius: 2,
+                      transition: 'transform 0.2s',
+                      '&:hover': { transform: 'scale(1.02)' },
+                    }}
                     onClick={() =>
-                      navigate(`/practice/${key}/${firstUnsolved._id}`)
+                      navigate(
+                        `/practice/${slug}/${firstUnsolved._id}`
+                      )
                     }
                   >
                     Resume Practice
@@ -225,7 +294,10 @@ const Dashboard: React.FC = () => {
               borderRadius: '40px',
               fontSize: '1rem',
               transition: 'background-color 0.3s, transform 0.2s',
-              '&:hover': { backgroundColor: theme.palette.primary.dark, transform: 'scale(1.02)' },
+              '&:hover': {
+                backgroundColor: theme.palette.primary.dark,
+                transform: 'scale(1.02)',
+              },
             }}
             onClick={handleStartPractice}
           >

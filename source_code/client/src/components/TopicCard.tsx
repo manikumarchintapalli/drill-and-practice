@@ -16,25 +16,40 @@ import {
   BACKGROUND_COLOR,
 } from "../lib/theme";
 
-interface TopicCardProps {
+export interface TopicCardProps {
   topic: string;
   questionCount: number;
   firstQuestionId?: string;
+  onClick?: () => void;
 }
 
 const TopicCard: React.FC<TopicCardProps> = ({
   topic,
   questionCount,
   firstQuestionId,
+  onClick,
 }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const slug = topic.toLowerCase().replace(/\s+/g, "-");
+  const slug = topic
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]+/g, "");
+
+  // If no custom onClick was provided, fall back to navigating
+  const handleClick =
+    onClick ??
+    (() => {
+      if (firstQuestionId) {
+        navigate(`/practice/${slug}/${firstQuestionId}`);
+      }
+    });
 
   return (
     <Paper
       elevation={3}
+      onClick={handleClick}
       sx={{
         width: "100%",
         minHeight: { xs: 240, sm: 260, md: 280 },
@@ -46,6 +61,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
         flexDirection: "column",
         justifyContent: "space-between",
         border: `2px solid ${SECONDARY_COLOR}`,
+        cursor: firstQuestionId || onClick ? "pointer" : "default",
         "&:hover": {
           boxShadow: theme.shadows[6],
           transform: "translateY(-4px)",
@@ -95,9 +111,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
       <Button
         fullWidth
         variant="contained"
-        onClick={() =>
-          navigate(`/practice/${slug}/${firstQuestionId}`)
-        }
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick();
+        }}
         disabled={!firstQuestionId}
         sx={{
           mt: 2,
@@ -105,9 +122,6 @@ const TopicCard: React.FC<TopicCardProps> = ({
           color: HIGHLIGHTS_COLOR,
           fontWeight: 600,
           textTransform: "none",
-          "&:hover": {
-            // hover color change omitted as per instructions
-          },
           "&:disabled": {
             backgroundColor: theme.palette.action.disabledBackground,
             color: theme.palette.text.disabled,

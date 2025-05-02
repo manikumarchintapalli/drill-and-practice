@@ -1,5 +1,5 @@
 // src/components/AdminQuestionManager.tsx
-import React, { useState } from "react";
+import React, { useState, useMemo, MouseEvent } from "react";
 import {
   Box,
   Container,
@@ -7,10 +7,10 @@ import {
   Typography,
   TextField,
   Button,
+  FormControl,
+  InputLabel,
   Select,
   MenuItem,
-  InputLabel,
-  FormControl,
   Alert,
   Stack,
   useTheme,
@@ -24,11 +24,14 @@ import {
   useGetCoursesService,
   useGetTopicsService,
   useUpdateQuestionService,
+  type Course,
+  type Topic,
 } from "../api/apiServices";
 
+// We still keep a local form‐shape for creating/editing
 export interface QuestionForm {
   _id?: string;
-  topic: string;
+  topic: string;          // holds Topic._id
   title: string;
   description: string;
   options: string[];
@@ -36,15 +39,35 @@ export interface QuestionForm {
   difficulty: "Easy" | "Medium" | "Hard";
 }
 
+// The shape your questions come back as from the server
+interface APIQuestion {
+  _id: string;
+  topic: string | Topic;
+  title: string;
+  description: string;
+  options: string[];
+  answerIndex: number;
+  difficulty: "Easy" | "Medium" | "Hard";
+}
+
+// Helper to display either a raw-topic‐id or a populated Topic object
+const getTopicName = (t?: string | Topic): string =>
+  typeof t === "string" ? t : t?.name ?? "";
+
 const AdminQuestionManager: React.FC = () => {
   const theme = useTheme();
 
+  // UI state
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [newCourse, setNewCourse] = useState<string>("");
   const [newTopic, setNewTopic] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [topicMessage, setTopicMessage] = useState<{ type: "success" | "error" | null; text: string }>({ type: "success", text: "" });
+  const [topicMessage, setTopicMessage] = useState<{
+    type: "success" | "error" | null;
+    text: string;
+  }>({ type: null, text: "" });
 
+  // Question form state
   const [question, setQuestion] = useState<QuestionForm>({
     topic: "",
     title: "",
@@ -54,15 +77,19 @@ const AdminQuestionManager: React.FC = () => {
     difficulty: "Medium",
   });
 
-  const { data: courses = [] } = useGetCoursesService();
-  const { data: topics = [] } = useGetTopicsService(selectedCourse);
-  const { data: questions = [], refetch: refetchQuestions } = useGetAllQuestionsService();
+  // API data & mutations
+  const { data: courses = [] } = useGetCoursesService();          // Course[]
+  const { data: topics = [] } = useGetTopicsService(selectedCourse); // Topic[]
+  const { data: questions = [], refetch: refetchQuestions } =
+    useGetAllQuestionsService();                                  // APIQuestion[]
 
   const addCourse = useAddCourseService();
   const addTopic = useAddTopicService();
   const createQuestion = useCreateQuestionService();
   const updateQuestion = useUpdateQuestionService();
   const deleteQuestion = useDeleteQuestionService();
+
+  // --- Handlers ---
 
   const handleAddCourse = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +108,10 @@ const AdminQuestionManager: React.FC = () => {
       return;
     }
     try {
-      await addTopic.mutateAsync({ name: newTopic.trim(), course: selectedCourse });
+      await addTopic.mutateAsync({
+        name: newTopic.trim(),
+        course: selectedCourse,
+      });
       setNewTopic("");
       setTopicMessage({ type: "success", text: "Topic added successfully!" });
     } catch {
@@ -112,16 +142,17 @@ const AdminQuestionManager: React.FC = () => {
     refetchQuestions();
   };
 
-  const handleEdit = (q: any) => {
-    const matchedTopic = topics.find((t) => t.name === q.topic);
+  const handleEdit = (q: APIQuestion) => {
+    // normalize topic ID whether it's a string or nested object
+    const tid = typeof q.topic === "string" ? q.topic : q.topic._id;
     setQuestion({
       _id: q._id,
-      topic: matchedTopic?._id || "",
-      title: q.text,
-      description: q.solution || "",
-      options: q.options || ["", "", "", ""],
-      answerIndex: q.answerIndex ?? 0,
-      difficulty: (q.difficulty as "Easy" | "Medium" | "Hard") || "Medium",
+      topic: tid,
+      title: q.title,
+      description: q.description,
+      options: q.options,
+      answerIndex: q.answerIndex,
+      difficulty: q.difficulty,
     });
     setEditingId(q._id);
   };
@@ -133,44 +164,53 @@ const AdminQuestionManager: React.FC = () => {
     }
   };
 
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...question.options];
-    newOptions[index] = value;
-    setQuestion({ ...question, options: newOptions });
+  const handleOptionChange = (idx: number, val: string) => {
+    const opts = [...question.options];
+    opts[idx] = val;
+    setQuestion({ ...question, options: opts });
   };
 
-  const filteredQuestions = questions.filter((q) => {
+  // only show questions for the currently‐selected topic
+  const filteredQuestions = useMemo(() => {
     const topicName = topics.find((t) => t._id === question.topic)?.name;
-    return q.topic === topicName;
-  });
+    if (!topicName) return [];
+    return questions.filter((q) => getTopicName(q.topic) === topicName);
+  }, [questions, question.topic, topics]);
 
   return (
-    <Container maxWidth="md" sx={{ py: theme.spacing(5) }}>
-      <Typography variant="h4" gutterBottom>Admin Question Manager</Typography>
+    <Container maxWidth="md" sx={{ py: 5 }}>
+      <Typography variant="h4" gutterBottom>
+        Admin Question Manager
+      </Typography>
 
       {/* Course Section */}
-      <Paper sx={{ p: theme.spacing(3), mb: theme.spacing(4) }}>
+      <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6">Select or Add Course</Typography>
-        <Stack direction="row" spacing={2} sx={{ mt: theme.spacing(2) }}>
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
           <TextField
             label="New Course Name"
             value={newCourse}
             onChange={(e) => setNewCourse(e.target.value)}
             fullWidth
           />
-          <Button variant="contained" onClick={handleAddCourse}>Add</Button>
+          <Button variant="contained" onClick={handleAddCourse}>
+            Add
+          </Button>
         </Stack>
-        <FormControl fullWidth sx={{ mt: theme.spacing(2) }}>
-          <InputLabel>Select Course</InputLabel>
+        <FormControl fullWidth sx={{ mt: 2 }}>
+          <InputLabel id="course-select-label">Select Course</InputLabel>
           <Select
-            value={selectedCourse}
+            labelId="course-select-label"
             label="Select Course"
+            value={selectedCourse}
             onChange={(e) => {
-              setSelectedCourse(e.target.value);
+              setSelectedCourse(e.target.value as string);
               setQuestion((q) => ({ ...q, topic: "" }));
             }}
           >
-            <MenuItem value="">-- Select Course --</MenuItem>
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
             {courses.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -181,25 +221,32 @@ const AdminQuestionManager: React.FC = () => {
       </Paper>
 
       {/* Topic Section */}
-      <Paper sx={{ p: theme.spacing(3), mb: theme.spacing(4) }}>
+      <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6">Select or Add Topic</Typography>
-        <Stack direction="row" spacing={2} sx={{ mt: theme.spacing(2) }}>
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
           <TextField
             label="New Topic Name"
             value={newTopic}
             onChange={(e) => setNewTopic(e.target.value)}
             fullWidth
           />
-          <Button variant="contained" onClick={handleTopicSubmit}>Add</Button>
+          <Button variant="contained" onClick={handleTopicSubmit}>
+            Add
+          </Button>
         </Stack>
-        <FormControl fullWidth sx={{ mt: theme.spacing(2) }}>
-          <InputLabel>Select Topic</InputLabel>
+        <FormControl fullWidth sx={{ mt: 2 }}>
+          <InputLabel id="topic-select-label">Select Topic</InputLabel>
           <Select
-            value={question.topic}
+            labelId="topic-select-label"
             label="Select Topic"
-            onChange={(e) => setQuestion({ ...question, topic: e.target.value })}
+            value={question.topic}
+            onChange={(e) =>
+              setQuestion({ ...question, topic: e.target.value as string })
+            }
           >
-            <MenuItem value="">-- Select Topic --</MenuItem>
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
             {topics.map((t) => (
               <MenuItem key={t._id} value={t._id}>
                 {t.name}
@@ -211,7 +258,7 @@ const AdminQuestionManager: React.FC = () => {
           <Alert
             severity={topicMessage.type || "info"}
             onClose={() => setTopicMessage({ type: null, text: "" })}
-            sx={{ mt: theme.spacing(2) }}
+            sx={{ mt: 2 }}
           >
             {topicMessage.text}
           </Alert>
@@ -219,56 +266,71 @@ const AdminQuestionManager: React.FC = () => {
       </Paper>
 
       {/* Question Form */}
-      <Paper sx={{ p: theme.spacing(3), mb: theme.spacing(4) }}>
+      <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6">{editingId ? "Edit" : "Add"} Question</Typography>
-        <Box component="form" onSubmit={handleQuestionSubmit} sx={{ mt: theme.spacing(2) }}>
+        <Box component="form" onSubmit={handleQuestionSubmit} sx={{ mt: 2 }}>
           <TextField
             label="Title"
             value={question.title}
-            onChange={(e) => setQuestion({ ...question, title: e.target.value })}
+            onChange={(e) =>
+              setQuestion({ ...question, title: e.target.value })
+            }
             fullWidth
-            sx={{ mb: theme.spacing(2) }}
+            sx={{ mb: 2 }}
           />
           <TextField
             label="Description"
             value={question.description}
-            onChange={(e) => setQuestion({ ...question, description: e.target.value })}
+            onChange={(e) =>
+              setQuestion({ ...question, description: e.target.value })
+            }
             fullWidth
             multiline
             rows={3}
-            sx={{ mb: theme.spacing(2) }}
+            sx={{ mb: 2 }}
           />
-          {question.options.map((option, index) => (
+          {question.options.map((opt, i) => (
             <TextField
-              key={index}
-              label={`Option ${index + 1}`}
-              value={option}
-              onChange={(e) => handleOptionChange(index, e.target.value)}
+              key={i}
+              label={`Option ${i + 1}`}
+              value={opt}
+              onChange={(e) => handleOptionChange(i, e.target.value)}
               fullWidth
-              sx={{ mb: theme.spacing(2) }}
+              sx={{ mb: 2 }}
             />
           ))}
           <TextField
-            label="Correct Answer Index (0-3)"
+            label="Answer Index (0–3)"
             type="number"
             value={question.answerIndex}
-            onChange={(e) => setQuestion({ ...question, answerIndex: parseInt(e.target.value) })}
+            onChange={(e) =>
+              setQuestion({
+                ...question,
+                answerIndex: parseInt(e.target.value, 10) || 0,
+              })
+            }
             fullWidth
-            sx={{ mb: theme.spacing(2) }}
+            sx={{ mb: 2 }}
           />
-          <FormControl fullWidth sx={{ mb: theme.spacing(2) }}>
-            <InputLabel>Difficulty</InputLabel>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="difficulty-select-label">Difficulty</InputLabel>
             <Select
-              value={question.difficulty}
+              labelId="difficulty-select-label"
               label="Difficulty"
-              onChange={(e) => setQuestion({ ...question, difficulty: e.target.value as any })}
+              value={question.difficulty}
+              onChange={(e) =>
+                setQuestion({
+                  ...question,
+                  difficulty: e.target.value as QuestionForm["difficulty"],
+                })
+              }
             >
               <MenuItem value="Easy">Easy</MenuItem>
               <MenuItem value="Medium">Medium</MenuItem>
               <MenuItem value="Hard">Hard</MenuItem>
             </Select>
           </FormControl>
-          <Button variant="contained" type="submit" fullWidth>
+          <Button type="submit" variant="contained" fullWidth>
             {editingId ? "Update Question" : "Add Question"}
           </Button>
         </Box>
@@ -276,30 +338,41 @@ const AdminQuestionManager: React.FC = () => {
 
       {/* Questions List */}
       {question.topic && (
-        <Paper sx={{ p: theme.spacing(3) }}>
-          <Typography variant="h6" gutterBottom>Questions for Selected Topic</Typography>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Questions for Selected Topic
+          </Typography>
           {filteredQuestions.length > 0 ? (
             filteredQuestions.map((q) => (
               <Box
                 key={q._id}
                 sx={{
                   border: `1px solid ${theme.palette.grey[300]}`,
-                  borderRadius: theme.shape.borderRadius,
-                  p: theme.spacing(2),
-                  mb: theme.spacing(2),
+                  borderRadius: 1,
+                  p: 2,
+                  mb: 2,
                 }}
               >
                 <Typography fontWeight="bold">
-                  {q.text} ({q.difficulty})
+                  {q.title} ({q.difficulty})
                 </Typography>
-                <Typography variant="body2" sx={{ mt: theme.spacing(1) }}>
-                  {q.solution}
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  {q.description}
                 </Typography>
-                <Stack direction="row" spacing={1} sx={{ mt: theme.spacing(2) }}>
-                  <Button size="small" variant="outlined" onClick={() => handleEdit(q)}>
+                <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleEdit(q)}
+                  >
                     Edit
                   </Button>
-                  <Button size="small" variant="contained" color="error" onClick={() => handleDelete(q._id)}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="error"
+                    onClick={() => handleDelete(q._id)}
+                  >
                     Delete
                   </Button>
                 </Stack>
