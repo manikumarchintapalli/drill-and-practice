@@ -34,7 +34,7 @@ const Practice: React.FC = () => {
       sx={{
         bgcolor: 'background.default',
         minHeight: '100vh',
-        // ← Reserve space at the top so content sits *below* your fixed navbar
+        
         pt: { xs: '80px', sm: '110px' },
         pb: theme.spacing(6),
         scrollBehavior: 'smooth',

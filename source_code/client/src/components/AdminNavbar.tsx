@@ -85,7 +85,7 @@ const AdminNavbar: React.FC = () => {
               to={item.path}
               sx={{
                 "&:hover": {
-                  backgroundColor: `${PRIMARY_COLOR}22`, // light hover effect
+                  backgroundColor: `${PRIMARY_COLOR}22`, 
                 },
               }}
             >
@@ -104,7 +104,7 @@ const AdminNavbar: React.FC = () => {
             onClick={handleLogout}
             sx={{
               "&:hover": {
-                backgroundColor: `${PRIMARY_COLOR}22`, // same hover effect
+                backgroundColor: `${PRIMARY_COLOR}22`, 
               },
             }}
           >

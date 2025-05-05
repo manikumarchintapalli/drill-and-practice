@@ -22,11 +22,7 @@ export default {
     'routes/**/*.{js,mjs}',
     'models/**/*.{js,mjs}',
     'startup/**/*.{js,mjs}',
-    // add any other directories with source code, e.g.:
-    // 'middleware/**/*.{js,mjs}',
-    // 'utils/**/*.{js,mjs}',
-
-    // exclude tests and type declarations
+  
     '!**/*.test.{js,mjs}',
     '!**/__tests__/**',
     '!**/*.d.ts',

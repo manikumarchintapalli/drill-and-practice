@@ -23,9 +23,7 @@ import {
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useNavigate } from 'react-router-dom';
 
-// ————————————————————————————————————————————————
-// Adjusted Problem type so topic can be object or string
-// ————————————————————————————————————————————————
+
 export interface Problem {
   id: string;
   title: string;
@@ -38,21 +36,15 @@ type TopicField =
   | string 
   | { _id: string; name: string; slug: string };
 
-// ————————————————————————————————————————————————
-// Pure‐string slugifier (only for real strings)
-// ————————————————————————————————————————————————
+
 const slugifyText = (text: string) =>
   text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
-// ————————————————————————————————————————————————
-// Extract a display‐name from our union
-// ————————————————————————————————————————————————
+
 const getTopicName = (t?: TopicField): string =>
   typeof t === 'string' ? t : t?.name || '';
 
-// ————————————————————————————————————————————————
-// Extract a slug from our union
-// ————————————————————————————————————————————————
+
 const getTopicSlug = (t?: TopicField): string => {
   if (!t) return '';
   return typeof t === 'string' ? slugifyText(t) : t.slug;

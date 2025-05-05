@@ -1,4 +1,4 @@
-// src/pages/Dashboard.tsx
+
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -28,9 +28,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// ————————————————————————————————————————————————
-// Local types to cover both old & new backend shape
-// ————————————————————————————————————————————————
 type TopicField =
   | string
   | { _id: string; name: string; slug: string };
@@ -54,17 +51,13 @@ interface TopicStats {
 
 type DashboardStats = Record<string, TopicStats>;
 
-// ————————————————————————————————————————————————
-// Helpers
-// ————————————————————————————————————————————————
-// Normalize a plain string to lower-case key
+
 const normalize = (s: string): string => s.trim().toLowerCase();
 
-// Safely pull out the human name from our union
 const getTopicName = (t?: TopicField): string =>
   typeof t === 'string' ? t : t?.name ?? '';
 
-// Safely pull out the slug from our union
+
 const getTopicSlug = (t?: TopicField): string =>
   typeof t === 'string'
     ? normalize(t).replace(/\s+/g, '-').replace(/[^\w-]/g, '')
@@ -81,7 +74,6 @@ const Dashboard: React.FC = () => {
     theme.palette.error.main,
   ];
 
-  // 1️⃣ Stats, topics & problems from your hooks
   const {
     data: stats = {} as DashboardStats,
     isLoading: statsLoading,
@@ -97,7 +89,7 @@ const Dashboard: React.FC = () => {
   } = useGetAllQuestionsService();
   const { mutate: resetDashboardStats } = useResetDashboardStatsService();
 
-  // ⏳ Loading spinner
+ 
   if (statsLoading || topicsLoading || problemsLoading) {
     return (
       <Container
@@ -112,7 +104,6 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // 2️⃣ Build a map: normalized topic‐name → { name, slug }
   const topicsByKey = allTopics.reduce<
     Record<string, { name: string; slug: string }>
   >((acc, t) => {
@@ -120,12 +111,12 @@ const Dashboard: React.FC = () => {
     return acc;
   }, {});
 
-  // 3️⃣ Only show stats for topics that actually exist
+
   const topicKeys = Object.keys(stats).filter((topicName) =>
     Boolean(topicsByKey[normalize(topicName)])
   );
 
-  // Chart‐data helper
+
   const getTopicChartData = (topicName: string) => {
     const { correct = 0, attempted = 0 } = stats[topicName] || {};
     return [
@@ -134,7 +125,7 @@ const Dashboard: React.FC = () => {
     ];
   };
 
-  // 4️⃣ “Start new session” resets & navigates
+ 
   const handleStartPractice = () => {
     resetDashboardStats(undefined, {
       onSuccess: async () => {
@@ -147,9 +138,7 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  // ————————————————————————————————————————————————
-  // Render
-  // ————————————————————————————————————————————————
+
   return (
     <Box
       sx={{
@@ -197,11 +186,11 @@ const Dashboard: React.FC = () => {
             const { name, slug } = topicsByKey[key];
             const data = getTopicChartData(topicName);
 
-            // 👉 find all problems for this topic
+          
             const problems = allProblems.filter(
               (q) => normalize(getTopicName(q.topic)) === key
             );
-            // 👉 pick the first one not in stats.solved
+            
             const firstUnsolved = problems.find(
               (q) => !stats[topicName]?.solved?.includes(q._id)
             );

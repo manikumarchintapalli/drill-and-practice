@@ -5,9 +5,7 @@ import Topic from "../models/Topic.js";
 
 const questionsRoutes = express.Router();
 
-// —————————————————————————
-// Admin check (unchanged)
-// —————————————————————————
+
 const verifyAdmin = (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return { error: "Access Denied. No token provided.", status: 401 };
@@ -23,9 +21,7 @@ const verifyAdmin = (req, res) => {
   }
 };
 
-// —————————————————————————
-// GET all problems (public), with topic populated
-// —————————————————————————
+
 questionsRoutes.get("/", async (req, res) => {
   try {
     const problems = await Problem.find()
@@ -39,9 +35,7 @@ questionsRoutes.get("/", async (req, res) => {
   }
 });
 
-// —————————————————————————
-// Add new problem (admin-only)
-// —————————————————————————
+
 questionsRoutes.post("/", async (req, res) => {
   const auth = verifyAdmin(req, res);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });
@@ -57,9 +51,7 @@ questionsRoutes.post("/", async (req, res) => {
   }
 });
 
-// —————————————————————————
-// Update problem (admin-only)
-// —————————————————————————
+
 questionsRoutes.put("/:id", async (req, res) => {
   const auth = verifyAdmin(req, res);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });
@@ -73,9 +65,7 @@ questionsRoutes.put("/:id", async (req, res) => {
   }
 });
 
-// —————————————————————————
-// Delete problem (admin-only)
-// —————————————————————————
+
 questionsRoutes.delete("/:id", async (req, res) => {
   const auth = verifyAdmin(req, res);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });

@@ -1,13 +1,10 @@
-// src/api/apiServices.ts
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { getAuthenticatedUser } from "../lib/authUtils";
 import http, { queryClient } from "./http";
 
-// —— WEBSITE DATA —— //
 
 export interface WebsiteData {
-  // fill these out with your actual shape
   homePage?: Record<string, any>;
   navbar?: {
     links: Array<{ label: string; value: string }>;
@@ -17,7 +14,6 @@ export interface WebsiteData {
   [key: string]: any;
 }
 
-// ✅ New (Correct):
 export const useWebsiteData = () =>
   useQuery<WebsiteData, Error>({
     queryKey: ["websiteData"],
@@ -25,7 +21,6 @@ export const useWebsiteData = () =>
   });
 
 
-// —— COURSE APIs —— //
 
 export interface Course {
   id: string;
@@ -55,7 +50,6 @@ export const useAddCourseService = () =>
   });
 
 
-// —— TOPIC APIs —— //
 
 export interface Topic {
   id?: string;
@@ -64,7 +58,6 @@ export interface Topic {
   [key: string]: any;
 }
 
-// All topics
 export const useGetAllTopicsService = () =>
   useQuery<Topic[], Error>({
     queryKey: ["topics"],
@@ -74,7 +67,6 @@ export const useGetAllTopicsService = () =>
     },
   });
 
-// Topics for a specific course
 export const useGetTopicsService = (courseId: string) =>
   useQuery<Topic[], Error>({
     queryKey: ["topics", courseId],
@@ -97,7 +89,6 @@ export const useAddTopicService = () =>
   });
 
 
-// —— QUESTION APIs —— //
 
 export interface Question {
   _id: string;
@@ -149,7 +140,6 @@ export const useDeleteQuestionService = () =>
   });
 
 
-// —— DASHBOARD STATS —— //
 
 export interface TopicStats {
   attempted: number;
@@ -194,7 +184,6 @@ export const useResetDashboardStatsService = () =>
   });
 
 
-// —— AUTH SERVICES —— //
 
 export interface SignInPayload {
   email: string;
@@ -207,21 +196,6 @@ export interface AuthResponse {
   [key: string]: any;
 }
 
-// export const useSignInService = () =>
-//   useMutation<AuthResponse, Error, SignInPayload>({
-//     mutationFn: async (data) => {
-//       const res = await http.post<AuthResponse>("/api/user/sign-in", data);
-//       return {token: res.data};
-//     },
-//   });
-
-// export const useAdminSignInService = () =>
-//   useMutation<AuthResponse, Error, SignInPayload>({
-//     mutationFn: async (data) => {
-//       const res = await http.post<AuthResponse>("/api/admin/sign-in", data);
-//       return res.data;
-//     },
-//   });
 
 
 export const useSignInService = () =>
@@ -232,7 +206,6 @@ export const useSignInService = () =>
     },
   });
 
-// ✅ Fix useAdminSignInService
 export const useAdminSignInService = () =>
   useMutation<AuthResponse, Error, SignInPayload>({
     mutationFn: async (data) => {
@@ -241,7 +214,6 @@ export const useAdminSignInService = () =>
     },
   });
 
-  // in src/api/apiServices.ts
 
 export interface SignUpPayload {
   email: string;
@@ -271,7 +243,6 @@ export const useSignUpService = () =>
     avatar?: string;
   }
   
-  // Fetch your own profile
   export const useGetUserProfileService = () => {
     const user = getAuthenticatedUser();
     return useQuery<ProfileData, Error>({
@@ -284,7 +255,6 @@ export const useSignUpService = () =>
     });
   };
   
-  // Update profile by ID
   export const useUpdateUserProfileService = () =>
     useMutation<ProfileData, Error, ProfileData>({
       mutationFn: async (body) => {
@@ -293,36 +263,10 @@ export const useSignUpService = () =>
         return res.data;
       },
       onSuccess: (data) => {
-        // update cached profile
         queryClient.setQueryData(["userProfile", data._id], data);
       },
     });
-  // export const useGetUserProfileService = () => {
-  //   const user = getAuthenticatedUser();
-  //   return useQuery<any, Error>({
-  //     queryKey: ["userProfile", user?._id],
-  //     queryFn: async () => {
-  //       // GET /api/user/profile/:id
-  //       const res = await http.get(`/api/user/profile/${user?._id}`);
-  //       return res.data;
-  //     },
-  //     enabled: Boolean(user),
-  //   });
-  // };
-  
-  // export const useUpdateUserProfileService = () =>
-  //   useMutation<any, Error, Partial<any> & { id: string }>({
-  //     mutationFn: async (body) => {
-  //       const { id, ...updates } = body;
-  //       // PUT /api/user/profile/:id
-  //       const res = await http.put(`/api/user/profile/${id}`, updates);
-  //       return res.data;
-  //     },
-  //     onSuccess: () => {
-  //       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-  //     },
-  //   });
-
+    
   export const useResetPasswordService = () =>
     useMutation<any, Error, { currentPassword: string; newPassword: string }>({
       mutationFn: async (data) => {
