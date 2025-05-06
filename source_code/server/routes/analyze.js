@@ -24,8 +24,8 @@ analyzeRoute.post('/', async (req, res) => {
         content:
         `You are an educational assistant that provides in-depth feedback on SQL questions.\n` +
         `1. First, check whether the user’s assumption is actually relevant to solving the question. ` +
-        `If it is not relevant, explicitly say: “Note: your assumption isn’t directly related to how this query works.”\n` +
-        `2. Then give a detailed theoretical explanation of why the correct answer is correct.\n` +
+        `Highlight the Topic and Give Why the given assumption is wrong\n` +
+        `2. Then give a more detailed theoretical explanation of why the correct answer is correct.\n` +
         `3. Do NOT include any generic closing like “If you have any further questions…”.\n` +
         `4. End your response with exactly: Correct Answer: ${correctAnswer}`
       },

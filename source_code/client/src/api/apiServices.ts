@@ -29,6 +29,8 @@ export interface Course {
   [key: string]: any;
 }
 
+
+
 export const useGetCoursesService = () =>
   useQuery<Course[], Error>({
     queryKey: ["courses"],
@@ -266,7 +268,7 @@ export const useSignUpService = () =>
         queryClient.setQueryData(["userProfile", data._id], data);
       },
     });
-    
+
   export const useResetPasswordService = () =>
     useMutation<any, Error, { currentPassword: string; newPassword: string }>({
       mutationFn: async (data) => {
