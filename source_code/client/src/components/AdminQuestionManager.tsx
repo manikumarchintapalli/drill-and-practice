@@ -367,7 +367,7 @@ const AdminQuestionManager: React.FC = () => {
 </FormControl>
 
           <FormControl fullWidth sx={{ mb: 2 }}>
-  <InputLabel id="difficulty-select-label">Difficulty</InputLabel>
+  <InputLabel id="difficulty-select-label"></InputLabel>
   <Select
     labelId="difficulty-select-label"
     label="Difficulty"
