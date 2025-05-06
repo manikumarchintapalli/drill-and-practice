@@ -1,4 +1,4 @@
-// src/pages/SignIn.tsx
+
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -33,14 +33,13 @@ const SignIn: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // toggle password visibility auto‐hides after 3s
+  
   useEffect(() => {
     if (!showPassword) return;
     const t = setTimeout(() => setShowPassword(false), 3000);
     return () => clearTimeout(t);
   }, [showPassword]);
 
-  // react-query hooks
   const {
     mutate: signInUser,
     isPending: userPending,
@@ -62,7 +61,7 @@ const SignIn: React.FC = () => {
     };
 
     const onError = (err: any) => {
-      // axios errors include response.data
+   
       const msg =
         err?.response?.data ||
         "Login failed. Please check your credentials.";

@@ -1,4 +1,4 @@
-// src/pages/SignUp.tsx
+
 import React, { useState, useEffect } from "react";
 import {
   Alert,

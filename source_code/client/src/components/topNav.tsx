@@ -23,7 +23,6 @@ const TopNav: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // match these heights in the spacer Toolbar below
   const NAV_HEIGHT = isMobile ? 80 : 95;
 
   return (

@@ -1,9 +1,9 @@
 import { jwtDecode, JwtPayload } from "jwt-decode";
 
-// JWT Token storage key
+
 const LOGIN_LS_TOKEN = "user-token";
 
-// Define interface for your JWT payload
+
 interface DecodedToken extends JwtPayload {
   _id: string;
   role: "admin" | "user";
@@ -12,24 +12,23 @@ interface DecodedToken extends JwtPayload {
   name?: string;
 }
 
-// Login user by saving JWT and reloading
 export const loginUser = (token: string) => {
   localStorage.setItem(LOGIN_LS_TOKEN, token);
   window.location.reload();
 };
 
-// Logout user by removing JWT and reloading
+
 export const logoutUser = () => {
   localStorage.removeItem(LOGIN_LS_TOKEN);
   window.location.reload();
 };
 
-// Get authenticated user's decoded JWT payload
+
 export const getAuthenticatedUser = (): DecodedToken | null => {
   const token = localStorage.getItem(LOGIN_LS_TOKEN);
 
   if (!token || typeof token !== "string" || token.trim() === "") {
-    // No token found, don't warn unnecessarily
+   
     return null;
   }
 

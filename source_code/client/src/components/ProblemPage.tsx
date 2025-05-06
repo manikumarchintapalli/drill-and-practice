@@ -1,4 +1,4 @@
-// src/pages/ProblemPage.tsx
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -66,7 +66,7 @@ const ProblemPage: React.FC = () => {
     useUpdateDashboardStatsService();
   const isSubmitting = status === 'pending';
 
-  // Map API Questions → our Problem shape
+  
   const allProblems: Problem[] = useMemo(
     () =>
       rawQuestions.map((q: Question) => ({
@@ -113,7 +113,7 @@ const ProblemPage: React.FC = () => {
     );
   }
 
-  // Handlers
+
   const handleOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedOption(parseInt(e.target.value, 10));
   };
@@ -137,7 +137,7 @@ const ProblemPage: React.FC = () => {
     }
   };
 
-  // Render
+  
   return (
     <Box
       sx={{

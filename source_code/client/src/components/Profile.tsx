@@ -1,4 +1,4 @@
-// src/pages/Profile.tsx
+
 import React, { useEffect, useState } from 'react';
 import {
   Container,
@@ -33,21 +33,20 @@ const Profile: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // 1) Fetch profile
+ 
   const { data: profile, isLoading, isError } = useGetUserProfileService();
 
-  // 2) Prepare update mutation
   const { mutate: updateProfile, status } = useUpdateUserProfileService();
-  // React Query mutation status is "idle" | "pending" | "success" | "error"
+  
   const isSaving = status === 'pending';
 
-  // Local form & UI state
+
   const [formData, setFormData] = useState<Partial<ProfileData>>({});
   const [avatar, setAvatar] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showReset, setShowReset] = useState(false);
 
-  // Populate form when profile arrives
+  
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -59,7 +58,7 @@ const Profile: React.FC = () => {
     }
   }, [profile]);
 
-  // Loading / error UI
+  
   if (isLoading) {
     return (
       <Container sx={{ textAlign: 'center', py: theme.spacing(10) }}>
@@ -75,7 +74,7 @@ const Profile: React.FC = () => {
     );
   }
 
-  // Handlers
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -106,7 +105,7 @@ const Profile: React.FC = () => {
     setEditMode(false);
   };
 
-  // Render
+
   return (
     <Box
       sx={{
