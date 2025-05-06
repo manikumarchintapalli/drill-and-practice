@@ -36,7 +36,7 @@ export interface QuestionForm {
   description: string;
   options: string[];
   answerIndex: number;
-  difficulty: "Easy" | "Medium" | "Hard";
+  difficulty: "Easy" | "Medium" | "Hard"|"";
 }
 
 // API-returned shape
@@ -47,7 +47,7 @@ interface APIQuestion {
   description: string;
   options: string[];
   answerIndex: number;
-  difficulty: "Easy" | "Medium" | "Hard";
+  difficulty: "Easy"|"Medium"|"Hard";  
 }
 
 // helper to display topic name
@@ -79,8 +79,8 @@ const AdminQuestionManager: React.FC = () => {
     title: "",
     description: "",
     options: ["", "", "", ""],
-    answerIndex: 0,
-    difficulty: "Medium",
+    answerIndex: -1,
+    difficulty: "",
   });
 
   // API hooks
@@ -342,44 +342,52 @@ const AdminQuestionManager: React.FC = () => {
 
           {/* Correct Answer Select */}
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="answer-select-label">Correct Answer</InputLabel>
-            <Select
-              labelId="answer-select-label"
-              label="Correct Answer"
-              value={question.answerIndex}
-              onChange={(e) =>
-                setQuestion({
-                  ...question,
-                  answerIndex: parseInt(e.target.value as string, 10),
-                })
-              }
-            >
-              {question.options.map((_, idx) => (
-                <MenuItem key={idx} value={idx}>
-                  Option {idx + 1}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+  <InputLabel id="answer-select-label">Correct Answer</InputLabel>
+  <Select
+    labelId="answer-select-label"
+    label="Correct Answer"
+    displayEmpty
+    value={question.answerIndex}
+    onChange={(e) =>
+      setQuestion({
+        ...question,
+        answerIndex: Number(e.target.value),
+      })
+    }
+  >
+    <MenuItem value={-1} disabled>
+      <em>Select Correct Answer</em>
+    </MenuItem>
+    {question.options.map((_, idx) => (
+      <MenuItem key={idx} value={idx}>
+        Option {idx + 1}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
 
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="difficulty-select-label">Difficulty</InputLabel>
-            <Select
-              labelId="difficulty-select-label"
-              label="Difficulty"
-              value={question.difficulty}
-              onChange={(e) =>
-                setQuestion({
-                  ...question,
-                  difficulty: e.target.value as QuestionForm["difficulty"],
-                })
-              }
-            >
-              <MenuItem value="Easy">Easy</MenuItem>
-              <MenuItem value="Medium">Medium</MenuItem>
-              <MenuItem value="Hard">Hard</MenuItem>
-            </Select>
-          </FormControl>
+  <InputLabel id="difficulty-select-label">Difficulty</InputLabel>
+  <Select
+    labelId="difficulty-select-label"
+    label="Difficulty"
+    displayEmpty
+    value={question.difficulty}
+    onChange={(e) =>
+      setQuestion({
+        ...question,
+        difficulty: e.target.value as QuestionForm["difficulty"],
+      })
+    }
+  >
+    <MenuItem value="" disabled>
+      <em>Select Difficulty</em>
+    </MenuItem>
+    <MenuItem value="Easy">Easy</MenuItem>
+    <MenuItem value="Medium">Medium</MenuItem>
+    <MenuItem value="Hard">Hard</MenuItem>
+  </Select>
+</FormControl>
 
           <Button
             type="submit"
