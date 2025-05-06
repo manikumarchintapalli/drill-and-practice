@@ -67,3 +67,4 @@ const Practice: React.FC = () => {
 };
 
 export default Practice;
+

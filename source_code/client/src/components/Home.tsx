@@ -109,7 +109,7 @@ const Home: React.FC = () => {
             maxWidth={isMobile ? "100%" : "600px"}
             textAlign="center"
           >
-            Master DBMS concepts by solving curated challenges.
+            Master Computer science concepts by solving curated challenges.
             <br />
             Real-time learning through action.
           </Typography>
