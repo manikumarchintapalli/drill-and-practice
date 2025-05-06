@@ -12,7 +12,7 @@ const app = express();
 const STATIC_FILES_DIR = path.join(process.cwd(), "public");
 
 app.use(cors({
-  origin: 'http://localhost:5173', 
+  origin: 'http://ec2-3-149-242-97.us-east-2.compute.amazonaws.com:5173', 
   credentials: true
 }));
 app.use(express.json());
